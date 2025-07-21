@@ -1,0 +1,253 @@
+mainmenu "Zurvan Configuration"
+
+config PROJECT_PATH
+    string "Project Path"
+    help
+      Enter the abs path to Accel-Simulatoin project here. 
+
+config ENABLE_BPF
+    bool "Enable bpf-based scheduler"
+    default y
+
+if ENABLE_BPF
+choice
+    prompt "HOST MODE"
+
+    config STOP_WORLD_MODE
+        bool "stop_world_sim"
+    help
+        This host simulation stops all cpu at any accelerator communication
+    config ROUND_BASED_MODE
+        bool "round_based_sim"
+	help 
+        This host simulation stops all cpu periodically
+endchoice
+
+# Conditional submenu based on ROUND_BASED_MODE being selected
+if ROUND_BASED_MODE
+
+    menu "Round Based Simulation Options"
+    
+    config TOTAL_CORES
+        int "total number cores controlled by the OS"
+        default 48
+        help
+            Specifies the total number of cores controlled by the OS.
+    
+    config SIM_CORES
+        int "total number cores used for host simulation"
+        default 24
+        help
+            Specifies the total number of cores used for host simulation.
+
+    config SIM_PHY_CORES
+        int "number of physical cores to simulate"
+        default 0
+        help
+            what system you are simulating? basically how many cores it has, note this number should be >= SIM_CORES.
+
+    config ROUND_SLICE
+        int "Granularity of CPU stops in nanoseconds"
+        default 1000
+        help
+            Defines the slice size in nanoseconds of stopping the CPUs during each round-based simulation.
+    
+    config EXTRA_COST_TIME
+        int "Extra cost time in nanoseconds"
+        default 850
+        help
+            Defines the extra cost time in nanoseconds for each round-based simulation.
+    
+    config DEFAULT_ON_OFF
+        bool "Default turn on us scale round scheduling"
+        default n
+        help
+            Default on/off for the us scale round scheduling.
+    endmenu
+    
+endif
+endif
+
+menu "Accelerator Interactive Mode" 
+    
+    config USE_FAULT
+        bool "Enable segfault mode"
+        default n
+        help
+            Enable segfault for accelerator interaction
+    
+    config USE_TICK
+        bool "Enable tick mode"
+        default y
+        help
+            Enable tick mode for accelerator interaction, after register update, tick with "ud2" instruction.
+    
+    config EAGER_SYNC
+        bool "turn on eager synchronization" 
+        default y 
+        help 
+            Turn on eager synchronization to support interrupts
+        
+    if EAGER_SYNC
+        config EAGER_SYNC_PERIOD
+            int "Eager sync period in nanoseconds"
+            default 10000
+            help
+                Set the eager sync periods in nanoseconds
+    endif
+endmenu
+
+menu "Debug Configurations"
+    config PERF
+        bool "Enable perf counter"
+        default n
+
+    config DEBUG_MMIO
+        bool "Debug MMIO"
+        default n
+
+    config DEBUG_CONNECTION
+        bool "Debug connection bewteen host and accelerator"
+        default n
+
+    config DEBUG_HARMLESS
+        bool "Harmless debug output"
+        default n
+
+    config DEBUG_HARM
+        bool "Harmful Debug"
+        default n
+
+    config DEBUG_THREAD
+        bool "Debug thread"
+        default n
+
+    config DEBUG_NETWORK
+        bool "Debug network"
+        default n
+endmenu
+
+
+menu "Host mem/pcie simulation"
+    config PCIE_LPN 
+        bool "pcie"
+        default n
+    
+    config MEM_LPN
+        bool "mem"
+        default y
+
+endmenu
+
+choice
+    prompt "VTA"
+    config VTA_DSIM
+        bool "dsim for VTA"
+        help
+            DSIM simulation for VTA
+
+    config VTA_RTL
+        bool "RTL for VTA"
+        help
+            RTL simulation for VTA
+    
+    menu "Advanced VTA Configuration"
+        config VTA_FREQ
+            int "Frequency in MHz"
+            default 2000
+        config VTA_LINK_DELAY
+            int "Link delay in ns"
+            default 400
+            help
+                Set the link delay in nanoseconds
+        config NUM_VTA
+            int "Number of VTA"
+            default 0
+    endmenu
+    
+endchoice
+
+
+choice 
+    prompt "JPEG"
+    config JPEG_DSIM 
+        bool "dsim for JPEG"
+    help
+        DSIM simulation for JPEG
+    
+    config JPEG_RTL
+        bool "rtl for JPEG"
+	help 
+        RTL simulation for JPEG
+
+    menu "Advanced JPEG Configuration"
+        config JPEG_FREQ
+            int "Frequency in MHz"
+            default 2000
+
+        config JPEG_LINK_DELAY
+            int "Link delay in ns"
+            default 400
+        
+        config NUM_JPEG
+            int "Number of JPEG"
+            default 0
+    endmenu
+
+endchoice 
+
+
+choice
+    prompt "Protoacc"
+
+    config PROTOACC_DSIM
+        bool "dsim for protoacc"
+    help    
+        DSIM simulation for Protoacc
+    config PROTOACC_RTL
+        bool "rtl for protoacc"
+	help 
+        RTL simulation for Protoacc
+    
+    menu "Advanced Protoacc Configuration"
+        config PROTOACC_FREQ
+            int "Frequency in MHz"
+            default 2000
+
+        config PROTOACC_LINK_DELAY
+            int "Link delay in ns"
+            default 4
+        
+        config NUM_PROTOACC
+            int "Number of Protoacc"
+            default 0
+    endmenu
+
+endchoice
+
+menu "Legacy Settings"
+        config LEGACY_JPEG_DSIM
+            bool "jpeg dsim"
+            default n
+        config LEGACY_VTA_DSIM
+            bool "vta dsim"
+            default n
+        config LEGACY_PROTOACC_DSIM
+            bool "protoacc dsim"
+            default n
+endmenu
+
+config ENABLE_CUDA
+    bool "Enable CUDA support"
+help
+    Interpose library for CUDA
+
+if ENABLE_CUDA
+    menu "GPU configuration"
+    config CUDA_GPU_ADDRESS
+        string "gpu server address"
+        default rs3labsrv8.iccluster.epfl.ch
+        help
+        Enter the address of the GPU server here.
+    endmenu
+endif

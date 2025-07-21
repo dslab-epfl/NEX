@@ -1,0 +1,14 @@
+opencv-python
+numpy
+decorator
+scipy
+psutil
+typing_extensions
+attrs
+packaging
+pytest
+cloudpickle
+cffi
+matplotlib
+mxnet
+tornado

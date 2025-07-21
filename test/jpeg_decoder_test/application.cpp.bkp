@@ -1,0 +1,141 @@
+#include <assert.h>
+#include <bits/stdint-uintn.h>
+#include <drivers/jpegdecoder/jpegdecoder_driver.h>
+#include <sys/time.h>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <vector>
+#include <iomanip>
+#include <stdint.h>
+#include <unistd.h>
+#include <cstring>
+
+#define JPEG_SIZE 221184170
+double get_real_time()
+{
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    return now.tv_sec + now.tv_nsec / 1000000000.0;
+}
+
+uint64_t get_microseconds() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+// stolen from Vitis examples
+template <typename T> struct aligned_allocator {
+  using value_type = T;
+  aligned_allocator() {}
+  aligned_allocator(const aligned_allocator &) {}
+  template <typename U> aligned_allocator(const aligned_allocator<U> &) {}
+  T *allocate(std::size_t num) {
+    void *ptr = nullptr;
+    {
+      if (posix_memalign(&ptr, 4096, num * sizeof(T)))
+        throw std::bad_alloc();
+    }
+    return reinterpret_cast<T *>(ptr);
+  }
+  void deallocate(T *p, std::size_t num) {
+    free(p);
+  }
+};
+
+// Maximum size of the decode image, needed to allocate DRAM ont he FPGA
+static constexpr uint32_t MaxDecodeSize = 1 << 26; // 64 MiB
+// read a jpeg image
+auto loadImage(const std::string &path) {
+  auto numBytes = std::ifstream(path, std::ios::binary | std::ios::ate).tellg();
+  std::vector<uint8_t, aligned_allocator<uint8_t>> rawBytes(numBytes, 0);
+  std::ifstream(path, std::ios::binary).read(reinterpret_cast<char*>(rawBytes.data()), numBytes);
+  return rawBytes;
+}
+
+void dump_decoded(void* dst, const char* filename) {
+  FILE *f = fopen(filename, "wb");
+  if (f) {
+    fwrite(dst, 1, JPEG_SIZE, f);
+    fclose(f);
+  } else {
+    fprintf(stderr, "ERROR: Could not write file\n");
+  }
+}
+
+int launch_decode(uint8_t* image_data, uint32_t image_size, void* dst) {
+
+  printf("--- Starting app ---\n");
+  // uint64_t start = get_microseconds(); // Virtual time
+  // "Decode" the image using the JPEG decoder driver
+  decode_jpeg(image_data, image_size, dst);
+  return 0;
+}
+
+int finished_decode(){
+  return decode_done();
+}
+
+int cnt = 0;
+#define NUM_IMGS 10
+
+int main(){
+
+  uint8_t *image_data = NULL;
+  uint32_t image_size;
+
+  auto inputHostBuffer = (uint8_t*)malloc(221184170);
+
+  initialize_jpeg_decoder();
+  int processed_idx = 1;
+  int inflight_idx = 0;
+  void *buf1 = calloc(JPEG_SIZE, 1);
+  void *buf2 = calloc(JPEG_SIZE, 1);
+  void* two_buf[2] = {buf1, buf2};
+  
+  int have_processed_img = 0;
+  double tic = get_real_time();
+  char path[1024];
+  char* base_dir = "./test/data/";
+  uint64_t start = get_microseconds();
+
+  while(1){
+    
+    // sprintf(path, "%s/%d.jpg", base_dir, 10);
+    sprintf(path, "/home/jiacma/npc/simbricks-lpn/sims/misc/jpeg_decoder/test_img/420/medium.jpg");
+    printf("path %s\n", path);
+    auto jpegImage = loadImage(path);
+    std::cout << "img sizes " << jpegImage.size() << std::endl;
+    std::memcpy(inputHostBuffer, reinterpret_cast<uint32_t*>(jpegImage.data()), jpegImage.size());
+
+    launch_decode(inputHostBuffer, jpegImage.size(), two_buf[inflight_idx]);
+    // if(have_processed_img){
+    //   void* dst = two_buf[processed_idx];
+    //   int compute_sum = 0;
+    //   for(int i=0; i<256; i++){
+    //     if(i < 16){
+    //       printf("%x ", ((uint8_t*)dst)[i]);
+    //     }
+    //     compute_sum += ((uint8_t*)dst)[i];
+    //   }
+    //   printf("Sum of decoded image: %d\n", compute_sum);
+    //   have_processed_img = 0;
+    // }
+    // while(!finished_decode()){
+    //   usleep(10);
+    // }
+    have_processed_img = 1;
+    // finished, swap processed_idx and inflight_idx
+    int orig_pi = processed_idx;
+    processed_idx = inflight_idx;
+    inflight_idx = orig_pi;
+    cnt++;
+    if(cnt >= NUM_IMGS)
+      break;
+  }
+
+  uint64_t end = get_microseconds();
+  double toc = get_real_time();
+  printf("CPU time: %lu us, Real time: %f sec\n", end - start, toc - tic);
+}

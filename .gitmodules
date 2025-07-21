@@ -1,0 +1,7 @@
+[submodule "experiments/simbricks-tvm"]
+	path = experiments/simbricks-tvm
+	url = https://github.com/jonas-kaufmann/tvm-simbricks
+	branch = nex
+[submodule "external/scx"]
+	path = external/scx
+	url = https://github.com/sched-ext/scx.git

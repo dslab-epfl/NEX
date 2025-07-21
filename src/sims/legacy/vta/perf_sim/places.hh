@@ -1,0 +1,49 @@
+#pragma once
+#include "place_transition.hh"
+#include "token_types.hh"
+namespace vta{
+extern Place<> pload_ctrl;
+extern Place<> pcompute_ctrl;
+extern Place<> pstore_ctrl;
+extern Place<> pcompute_cap;
+extern Place<> pload_cap;
+extern Place<> pstore_cap;
+extern Place<token_class_total_insn> plaunch;
+extern Place<token_class_insn_count> psReadCmd;
+extern Place<token_class_ostxyuullupppp> pnumInsn;
+extern Place<token_class_ostxyuullupppp> psDrain;
+extern Place<token_class_iasbrr> dma_write_recv_buf;
+extern Place<> pcontrol;
+extern Place<> pcontrol_prime;
+extern Place<token_class_ostxyuullupppp> pcompute_inst_q;
+extern Place<> pcompute_done;
+extern Place<token_class_ostxyuullupppp> pstore_inst_q;
+extern Place<> pstore_done;
+extern Place<token_class_ostxyuullupppp> pload_inst_q;
+extern Place<> pload_done;
+extern Place<token_class_iasbrr> dma_write_req_put_0;
+extern Place<token_class_iasbrr> dma_write_mem_put_buf;
+extern Place<token_class_iasbrr> dma_write_req_get_0;
+extern Place<token_class_idx> dma_write_fifo_order;
+extern Place<token_class_iasbrr> dma_read_req_put_0;
+extern Place<token_class_iasbrr> dma_read_mem_put_buf;
+extern Place<> dma_write_SINK;
+extern Place<> dma_read_SINK;
+extern Place<> dma_write_send_cap;
+extern Place<> dma_read_send_cap;
+extern Place<token_class_insn_count> load_insn_cmd;
+extern Place<token_class_iasbrr> dma_read_req_get_2;
+extern Place<token_class_iasbrr> dma_read_recv_buf;
+extern Place<token_class_iasbrr> dma_read_req_get_0;
+extern Place<token_class_iasbrr> dma_read_req_put_1;
+extern Place<token_class_idx> dma_read_fifo_order;
+extern Place<token_class_iasbrr> dma_read_req_get_1;
+extern Place<> pcompute2store;
+extern Place<token_class_iasbrr> dma_read_req_put_2;
+extern Place<> pcompute2load;
+extern Place<> pstore2compute;
+extern Place<> pload2compute;
+extern Place<token_class_ostxyuullupppp> pcompute_process;
+extern Place<token_class_ostxyuullupppp> pload_process;
+extern Place<token_class_ostxyuullupppp> pstore_process;
+}
