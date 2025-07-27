@@ -1,0 +1,17 @@
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x76659268d000, size 163840 bytes.
+LD_PRELOAD
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+[00:17:36] /home/jiacma/new-NEX/experiments/simbricks-tvm/src/tir/transforms/arg_binder.cc:95: Warning: Trying to bind buffer to another one with lower alignment requirement  required_alignment=256, provided_alignment=64
+Time taken 206446000 ns
+Real latency 862.0423392710509 s
+Successful blocked matrix multiply test!
+/home/jiacma/anaconda3/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x79df7aed4000, size 163840 bytes.
+LD_PRELOAD

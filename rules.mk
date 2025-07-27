@@ -3,9 +3,15 @@ include config.mk
 CC = gcc
 CXX = g++
 
+top_srcdir := $(CONFIG_PROJECT_PATH)
+# Initialize legacy libraries variable
+LEGACY_LIBS :=
+LEGACY_LIB_TARGETS :=
+LEGACY_RPATH :=
+
 # No -O3 to avoid deadlock
-CFLAGS = -Wall -fPIC -O2
-CXXFLAGS = -Wall -fPIC -O2
+CFLAGS = -Wall -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -fPIC -O2 
+CXXFLAGS = -Wall -Wno-unused-variable -Wno-unused-but-set-variable -fPIC -O2
 LDFLAGS = -ldl -lcapstone -lrt
 
 ifeq ($(CONFIG_ENABLE_BPF), 1)
@@ -31,6 +37,7 @@ ALL_ALL :=
 EXEC_ALL :=
 ACCVM_ALL :=
 CLEAN_ALL :=
+DSIM_ALL :=
 
 EXEC_BINARY := nex
 SHARED_LIB := src/accvm.so
@@ -77,19 +84,19 @@ $(BPF_OBJECTS): %.o : %.c
 BPF_LINKS := -Wl,--start-group \
 	$(CURDIR)/external/scx/build/libbpf/src/libbpf.a -lelf -lz -lzstd -Wl,--end-group
 
-$(EXEC_BINARY): $(EXEC_ALL) $(BPF_OBJECTS)
-	$(CXX) -Wall $(INCLUDE) $^ -o $@ -lpthread $(LDFLAGS) \
+$(EXEC_BINARY): $(EXEC_ALL) $(BPF_OBJECTS) $(LEGACY_LIB_TARGETS) config.mk
+	$(CXX) -Wall $(INCLUDE) $(EXEC_ALL) $(BPF_OBJECTS) -o $@ -lpthread $(LDFLAGS) \
 		-Llib -lsimbricks \
-		$(BPF_LINKS)
+		$(BPF_LINKS) $(LEGACY_LIBS) $(LEGACY_RPATH)
 else
-$(EXEC_BINARY): $(EXEC_ALL)
-	$(CXX) -Wall  $(INCLUDE) $^ -o $@ -lpthread $(LDFLAGS) \
-		-Llib -lsimbricks
+$(EXEC_BINARY): $(EXEC_ALL) $(LEGACY_LIB_TARGETS) config.mk
+	$(CXX) -Wall  $(INCLUDE) $(EXEC_ALL) -o $@ -lpthread $(LDFLAGS) \
+		-Llib -lsimbricks $(LEGACY_LIBS) $(LEGACY_RPATH)
 endif
 
 # MMIO interception shared library (uses accvm objects only)
-$(SHARED_LIB): $(ACCVM_ALL)
-	$(CC) $(INCLUDE) $(CFLAGS) -shared $^ -o $@ $(LDFLAGS) \
+$(SHARED_LIB): $(ACCVM_ALL) config.mk
+	$(CC) $(INCLUDE) $(CFLAGS) -shared $(ACCVM_ALL) -o $@ $(LDFLAGS) \
 		-Llib -lsimbricks
 
 # SCX scheduler build
@@ -111,24 +118,40 @@ clean:
 	rm -f $(CLEAN_ALL) $(EXEC_BINARY) $(SHARED_LIB)
 	rm -f $(BPF_OBJECTS)
 
-# Test targets (keeping the essential ones)
-test_single_jpeg:
-	$(CXX) $(INCLUDE) test/jpeg_decoder_test/application_single_decode.c src/drivers/*.c -o jpeg_test.out
-	sudo JPEG_DEVICE=0 ./nex ./jpeg_test.out
-
-test_multi_jpeg_post:
-	$(CXX) -Iinclude -O3 test/jpeg_decoder_test/multiple_device_processing.c src/drivers/*.c -o multi_jpeg_test_post.out -lpthread
-	sudo ./nex ./multi_jpeg_test_post.out
-
 menuconfig:
 	@scripts/menuconfig.py
 
 # Install target
 install: $(EXEC_BINARY)
-	cp ./src/sims/lpn/jpeg_decoder/jpeg_decoder_bm ./simulators/dsim/jpeg
-	cp ./src/sims/lpn/vta/vta_bm ./simulators/dsim/vta
-	cp ./src/sims/lpn/protoacc/protoacc_bm ./simulators/dsim/protoacc
 	cp $(EXEC_BINARY) /usr/local/bin/$(EXEC_BINARY)
 	chmod +x /usr/local/bin/$(EXEC_BINARY)
 
-.PHONY: all clean scx test_jpeg menuconfig install
+dsim: $(DSIM_ALL)
+	cp ./src/sims/lpn/jpeg_decoder/jpeg_decoder_bm ./simulators/dsim/jpeg
+	cp ./src/sims/lpn/vta/vta_bm ./simulators/dsim/vta
+	cp ./src/sims/lpn/protoacc/protoacc_bm ./simulators/dsim/protoacc
+
+# Test targets 
+test_single_jpeg:
+	$(CXX) $(INCLUDE) test/jpeg_decoder_test/application_single_decode.c src/drivers/*.c -o jpeg_test.out
+	sudo JPEG_DEVICE=0 ./nex ./jpeg_test.out
+
+multi_jpeg_post:
+	$(CXX) -Iinclude -O3 test/jpeg_decoder_test/multiple_device_processing.c src/drivers/*.c -o multi_jpeg_test_post.out -lpthread
+
+test_multi_jpeg_post:
+	$(CXX) -Iinclude -O3 test/jpeg_decoder_test/multiple_device_processing.c src/drivers/*.c -o multi_jpeg_test_post.out -lpthread
+	sudo ./nex ./multi_jpeg_test_post.out 8
+
+compile_matmul:
+	$(CXX) -Iinclude -O3 test/nex.matmul.c -o nex.matmul
+
+test_matmul:
+	sudo ./nex ./test/nex.matmul
+
+autoconfig:
+	$(CXX) -Iinclude -O3 test/nex.matmul.c -o nex.matmul
+	./test/autoconfig.sh $(CONFIG_PROJECT_PATH) 3 700 1000
+
+
+.PHONY: all clean scx test_jpeg menuconfig install dsim

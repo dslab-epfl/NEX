@@ -3,12 +3,13 @@
 #include <cstdint>
 #include "sims/lpn/jpeg_decoder/perf_sim/token_types.hh"
 #include "sims/lpn/jpeg_decoder/include/jpeg_bm.hh"
+#include <config/config.h>
 
 namespace jpeg{
     enum class CstStr {
         DMA_READ=0,
         DMA_WRITE=1,
-        JPEG_SCALE_TO_PS=500,
+        JPEG_SCALE_TO_PS=1000000/CONFIG_JPEG_FREQ,
     };
 }
 

@@ -14,13 +14,15 @@ extern "C" {
 #if CONFIG_PCIE_LPN
     void pcie_advance_until_time(uint64_t ts);
     int pcie_active(uint64_t* next_active_ts);
-    int pcie_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr);
+    int pcie_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr);
     int pcie_get(uint64_t* ref_ptr, uint64_t* req_id, uint64_t* buffer, uint64_t* len);
 #else
     void mem_advance_until_time(uint64_t ts);
     int mem_active(uint64_t* next_active_ts);
-    int mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr);
-    int mem_get(uint64_t* ref_ptr, uint64_t* req_id, uint64_t* buffer, uint64_t* len);
+    int mem_put(int dev_id, uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr);
+    int mem_get(int dev_id, uint64_t* ref_ptr, uint64_t* req_id, uint64_t* buffer, uint64_t* len, uint64_t* ts);
+    // int mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr);
+    // int mem_get(uint64_t* ref_ptr, uint64_t* req_id, uint64_t* buffer, uint64_t* len);
 #endif
 }
 
@@ -43,37 +45,19 @@ extern "C" {
         func; \
     }  
 
-Transition* vta_t_list[T_SIZE] = {&vta::dma_read_arbiter, &vta::dma_read_mem_get, &vta::dma_read_recv_from_mem, &vta::dma_read_mem_put, &vta::dma_write_arbiter, &vta::dma_write_mem_get, &vta::dma_write_recv_from_mem, &vta::dma_write_mem_put, &vta::t13, &vta::tload_insn_pre, &vta::tload_insn_post, &vta::t12, &vta::t14, &vta::t15, &vta::t16, &vta::tload_launch, &vta::load_done, &vta::store_launch, &vta::store_done, &vta::compute_launch, &vta::compute_done };;
+#define DEV_ID 0
 
 static uint64_t inflight_read_write = 0;
 
-// void advance_dma(uint64_t ts){
-//     // DMA_ADVANCE_UNTIL_TIME(ts);
-//     // mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr
-//     while(!vta::dma_read_requests.empty()){
-//         auto token = vta::dma_read_requests.front();
-//         vta::dma_read_requests.pop_front();
-//         // printf("mem_put: tag %d, port %d\n", token->id, token->ref);
-//         token->ts = ts;
-//         vta::dma_read_resp.push_back(token);
-//     }
+Transition* vta_t_list[T_SIZE] = {&vta::dma_read_arbiter, &vta::dma_read_mem_get, &vta::dma_read_recv_from_mem, &vta::dma_read_mem_put, &vta::dma_write_arbiter, &vta::dma_write_mem_get, &vta::dma_write_recv_from_mem, &vta::dma_write_mem_put, &vta::t13, &vta::tload_insn_pre, &vta::tload_insn_post, &vta::t12, &vta::t14, &vta::t15, &vta::t16, &vta::tload_launch, &vta::load_done, &vta::store_launch, &vta::store_done, &vta::compute_launch, &vta::compute_done };;
 
-//     while(!vta::dma_write_requests.empty()){
-//         auto token = vta::dma_write_requests.front();
-//         vta::dma_write_requests.pop_front();
-//         token->ts = ts;
-//         // printf("mem_put: tag %d, port %d\n", token->id, token->ref);
-//         vta::dma_write_resp.push_back(token);
-//     }
-
-// }
 
 void advance_dma(uint64_t ts){
     DMA_ADVANCE_UNTIL_TIME(ts);
 
     // int mem_get(uint64_t* ref_ptr, uint64_t* req_id, uint64_t* buffer, uint64_t* len)
-    uint64_t tag, id, buffer, len;
-    while(DMA_GET(&tag, &id, &buffer, &len)){
+    uint64_t tag, id, buffer, len, the_vts;
+    while(DMA_GET(DEV_ID, &tag, &id, &buffer, &len, &the_vts)){
         inflight_read_write --;
         // printf("mem_get: tag %lu, id %lu, buffer %lu, len %lu\n", tag, id, buffer, len);
         auto it = io_pending_map[tag].begin();
@@ -99,7 +83,7 @@ void advance_dma(uint64_t ts){
         }
     }
 
-    // mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr
+    // mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr
     while(!vta::dma_read_requests.empty()){
         token_class_iasbrr* token = vta::dma_read_requests.front();
         vta::dma_read_requests.pop_front();
@@ -110,7 +94,6 @@ void advance_dma(uint64_t ts){
         if(io_req_map[tag].empty()){
             // no matched request, put response directly
             // no match because what lpn generates might not be the same as what the functional simulator expects
-            printf("no matched read request, put response directly\n");
             vta::dma_read_resp.push_back(token);
             continue;
         }
@@ -120,7 +103,7 @@ void advance_dma(uint64_t ts){
         assert(req->tag == tag);
         token->size = req->len;
         // printf("@%ld[ns] dma_read_start id %d; len %d\n", ts/1000, req->id, req->len);
-        DMA_PUT(ts, req->id, req->addr, req->len, 0, 0, req->rw, req->tag);
+        DMA_PUT(DEV_ID, ts, req->id, req->addr, req->len, 0, 0, req->rw, req->tag);
         inflight_read_write ++;
         io_pending_map[tag].push_back(std::move(req));
     }
@@ -129,14 +112,12 @@ void advance_dma(uint64_t ts){
         auto token = vta::dma_write_requests.front();
         vta::dma_write_requests.pop_front();
         auto tag = token->id;
-    
         // id is the tag in io_req_map
         // ref is the port number
         int matched = 0;
         if(io_req_map[tag].empty()){
             // no matched request, put response directly
             // no match because what lpn generates might not be the same as what the functional simulator expects
-            printf("no matched write request, put response directly\n");
             vta::dma_write_resp.push_back(token);
             continue;
         }
@@ -145,7 +126,7 @@ void advance_dma(uint64_t ts){
         token->size = req->len;
         // printf("mem_put: tag %d, id %d, port %d\n", tag, req->id, token->ref);
         // printf("@%ld[ns] dma_write_start id %d; len %d\n", ts/1000, req->id, req->len);
-        DMA_PUT(ts, req->id, req->addr, req->len, 0, 0, req->rw, req->tag);
+        DMA_PUT(DEV_ID, ts, req->id, req->addr, req->len, 0, 0, req->rw, req->tag);
         inflight_read_write ++;
         io_pending_map[tag].push_back(std::move(req));
     }
@@ -160,8 +141,7 @@ void vta_advance_until_time(uint64_t ts_in_nano){
     uint64_t start = 0;
     while(time <= ts){
         while(time <= ts){
-            LOOP_TS(trigger(t));
-            time = min_time_g(vta_t_list, T_SIZE);
+            time = trigger_and_min_time_g(vta_t_list, T_SIZE);
             uint64_t child_active_time = 0;
             int active = DMA_ACTIVE(&child_active_time);
             if (active == 1 && time > child_active_time){
@@ -194,28 +174,7 @@ void vta_advance_until_time(uint64_t ts_in_nano){
             break;
         }
     }
-    // for (int i = 0; i < T_SIZE; i++){
-    //     auto t = vta_t_list[i];
-    //     printf("t %s, t->count %d\n", t->id.c_str(), t->count);
-    // }
-    
-    // for (int i = 0; i < T_SIZE; i++){
-    //     auto t = vta_t_list[i];
-    //     // loop through input places and output places
-    //     for (int j = 0; j < t->p_input.size(); j++){
-    //         auto p = t->p_input[j];
-    //         if(p->tokensLen() > 0){
-    //             printf("t %s, p %s, p->tokens.size() %d\n", t->id.c_str(), p->id.c_str(), p->tokensLen());
-    //         }
-    //     }
-    //     for (int j = 0; j < t->p_output.size(); j++){
-    //         auto p = t->p_output[j];
-    //         if(p->tokensLen() > 0){
-    //             printf("t %s, p %s, p->tokens.size() %d\n", t->id.c_str(), p->id.c_str(), p->tokensLen());
-    //         }
-    //     }
-    // }
-    // printf(" //// (end %lu, start%lu)lpn advanced this much: %lu[ns]\n", prev_time/1000, start/1000, (prev_time - start)/1000);
+   
 }
 
 // here it's simplified to check if all transitions are finished
@@ -235,36 +194,32 @@ int vta_perf_sim_finished(){
         return 0;
     }
 
-    LOOP_TS(trigger(t));
-    uint64_t time = min_time_g(vta_t_list, T_SIZE);
+    uint64_t time = trigger_and_min_time_g(vta_t_list, T_SIZE);
     if (time == lpn::LARGE){
-        DMA_ACTIVE(&time);
-        if (time != lpn::LARGE){
-            return 0;
-        }
-         for(auto &kv : io_req_map) {
-            std::cerr << "io_req_map[" << kv.first << "].size() = " << kv.second.size() << "\n";
-        }
-        printf("dma_read_resp size %lu, dma_write_resp size %lu\n", vta::dma_read_resp.size(), vta::dma_write_resp.size());
+    
+        // for(auto &kv : io_req_map) {
+        //     std::cerr << "io_req_map[" << kv.first << "].size() = " << kv.second.size() << "\n";
+        // }
+        // printf("dma_read_resp size %lu, dma_write_resp size %lu\n", vta::dma_read_resp.size(), vta::dma_write_resp.size());
         for(auto &kv : io_req_map) {
-            if(kv.first == 0){
-                for (int i = 0; i < T_SIZE; i++){
-                    auto t = vta_t_list[i];
-                    // loop through input places and output places
-                    for (int j = 0; j < t->p_input.size(); j++){
-                        auto p = t->p_input[j];
-                        if(p->tokensLen() > 0){
-                            printf("t %s, p %s, p->tokens.size() %d\n", t->id.c_str(), p->id.c_str(), p->tokensLen());
-                        }
-                    }
-                    for (int j = 0; j < t->p_output.size(); j++){
-                        auto p = t->p_output[j];
-                        if(p->tokensLen() > 0){
-                            printf("t %s, p %s, p->tokens.size() %d\n", t->id.c_str(), p->id.c_str(), p->tokensLen());
-                        }
-                    }
-                }
-            }
+            // if(kv.first == 0){
+            //     for (int i = 0; i < T_SIZE; i++){
+            //         auto t = vta_t_list[i];
+            //         // loop through input places and output places
+            //         for (int j = 0; j < t->p_input.size(); j++){
+            //             auto p = t->p_input[j];
+            //             if(p->tokensLen() > 0){
+            //                 printf("t %s, p %s, p->tokens.size() %d\n", t->id.c_str(), p->id.c_str(), p->tokensLen());
+            //             }
+            //         }
+            //         for (int j = 0; j < t->p_output.size(); j++){
+            //             auto p = t->p_output[j];
+            //             if(p->tokensLen() > 0){
+            //                 printf("t %s, p %s, p->tokens.size() %d\n", t->id.c_str(), p->id.c_str(), p->tokensLen());
+            //             }
+            //         }
+            //     }
+            // }
             assert(kv.second.size() == 0);
         }
         return 1;
@@ -273,6 +228,7 @@ int vta_perf_sim_finished(){
 }
 
 void vta_sim_start(uint64_t insn_phy_addr,
+                 uint64_t dma_base_addr,
                  uint32_t insn_count,
                  uint32_t wait_cycles,
                  uint64_t ts_in_nano){
@@ -280,17 +236,18 @@ void vta_sim_start(uint64_t insn_phy_addr,
     inflight_read_write = 0;
     uint64_t ts = ts_in_nano*1000; // in picoseconds
     // printf("vta_sim_start\n");
-    VTADeviceHandle vta_func_device = AccVMVTADeviceAlloc();
-    printf("vta_func_device: %p, insn_count %d\n", vta_func_device, insn_count);
+    VTADeviceHandle vta_func_device = AccVMVTADeviceAlloc(dma_base_addr);
+    // printf("vta_func_device: %p, insn_count %d\n", vta_func_device, insn_count);
     AccVMVTADeviceRun(vta_func_device, insn_phy_addr, insn_count, wait_cycles, ts);
     // printf("after run: %p\n", vta_func_device);
     NEW_TOKEN(token_class_total_insn, plaunch_tk);
     plaunch_tk->total_insn = insn_count;
     plaunch_tk->ts = ts;
     vta::plaunch.pushToken(plaunch_tk);
-    for(auto &kv : io_req_map) {
-        std::cerr << "io_req_map[" << kv.first << "].size() = " << kv.second.size() << "\n";
-    }
+   
+    // for(auto &kv : io_req_map) {
+    //     std::cerr << "io_req_map[" << kv.first << "].size() = " << kv.second.size() << "\n";
+    // }
 
     // if(io_req_map[0].size() == 448 && io_req_map[1].size() == 1792 && io_req_map[2].size() == 25088 && io_req_map[3].size() == 28){
     //     std::set<std::string> place_set;

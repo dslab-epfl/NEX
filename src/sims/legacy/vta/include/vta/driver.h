@@ -81,7 +81,7 @@ typedef uint64_t vta_phy_addr_t;
  * \brief Allocate a device resource handle
  * \return The device handle.
  */
-VTADeviceHandle AccVMVTADeviceAlloc();
+VTADeviceHandle AccVMVTADeviceAlloc(uint64_t dma_base_addr);
 
 /*!
  * \brief Free a device handle

@@ -4,10 +4,13 @@
 int num_instr;
 std::map<int, std::deque<std::unique_ptr<MemReq>>> io_req_map;
 std::map<int, std::deque<std::unique_ptr<MemReq>>> io_pending_map;
-std::deque<token_class_iasbrr*> dma_read_requests;
-std::deque<token_class_iasbrr*> dma_write_requests;
-std::deque<token_class_iasbrr*> dma_read_resp;
-std::deque<token_class_iasbrr*> dma_write_resp;
+
+namespace protoacc {
+  std::deque<token_class_iasbrr*> dma_read_requests;
+  std::deque<token_class_iasbrr*> dma_write_requests;
+  std::deque<token_class_iasbrr*> dma_read_resp;
+  std::deque<token_class_iasbrr*> dma_write_resp;
+}
 
 std::vector<int> ids = {
         (int)protoacc::CstStr::SCALAR_DISPATCH_REQ, 

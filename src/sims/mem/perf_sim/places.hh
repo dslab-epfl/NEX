@@ -2,11 +2,6 @@
 #include "place_transition.hh"
 #include "token_types.hh"
 
-// extern Place<token_class_ralmtrd> dram_mem_req;
-// extern Place<token_class_ralmtrd> dram_mem_resp;
-// extern Place<> dram_mem_read_cap;
-// extern Place<> dram_mem_write_cap;
-
 extern Place<token_class_addr_type> memory_resp_cl;
 extern Place<token_class_ralmtrd> memory_resp;
 extern Place<token_class_ralmtrd> memory_req_front;

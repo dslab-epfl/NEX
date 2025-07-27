@@ -1,10 +1,9 @@
 #include <drivers/jpegdecoder/jpeg_decoder_driver.h>
+#include <drivers/sched/regs.h>
 #include <drivers/driver_common.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
-
-// Assuming these are the MMIO addresses for the JPEG decoder
 
 void tick_nex() {
   __asm__ volatile("ud2");
@@ -25,16 +24,26 @@ uintptr_t initialize_jpeg_decoder(void) {
   }
   JPEG_DECODER_MMIO_BASE = (MMIO_BASE + (10*JPEG_DECODER+device_num)*4096);
 
-  uintptr_t sched_mmio_base = (uintptr_t)MMIO_BASE;
-  *(uint64_t*)(sched_mmio_base) = 0x1000;
+  SchedRegs* sched_reg = (SchedRegs *)MMIO_BASE;
+  
+  printf("jpeg driver sched_reg->lock %lx\n", sched_reg->lock);
+  sched_ctrl_lock(sched_reg);
+
+  sched_reg->ctrl = 0x1000;
   tick_nex();
+
+  sched_ctrl_unlock(sched_reg);
+  printf("jpeg driver sched_reg->unlock %lx\n", sched_reg->lock);
+
   return (uintptr_t)MMIO_BASE;
 }
 
 void deinit_jpeg_decoder() {
-  uintptr_t sched_mmio_base = (uintptr_t)MMIO_BASE;
-  *(uint64_t*)(sched_mmio_base) = 0x2000;
-  tick_nex();
+   SchedRegs* sched_reg = (SchedRegs *)MMIO_BASE;
+   sched_ctrl_lock(sched_reg);
+   sched_reg->ctrl = 0x2000;
+   tick_nex();
+   sched_ctrl_unlock(sched_reg);
 }
 
 

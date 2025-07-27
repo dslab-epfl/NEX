@@ -8,7 +8,7 @@
 #if CONFIG_PCIE_LPN
     #define PCIE_LATENCY 0    
 #else
-    #define PCIE_LATENCY 400    
+    #define PCIE_LATENCY CONFIG_JPEG_LINK_DELAY  
 #endif
 
 

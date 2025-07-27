@@ -16,12 +16,12 @@ extern "C" {
 #if CONFIG_PCIE_LPN
     void pcie_advance_until_time(uint64_t ts);
     int pcie_active(uint64_t* next_active_ts);
-    int pcie_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr);
+    int pcie_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr);
     int pcie_get(uint64_t* ref_ptr, uint64_t* req_id, uint64_t* buffer, uint64_t* len);
 #else
     void mem_advance_until_time(uint64_t ts);
     int mem_active(uint64_t* next_active_ts);
-    int mem_put(int dev_id, uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr);
+    int mem_put(int dev_id, uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr);
     int mem_get(int dev_id, uint64_t* ref_ptr, uint64_t* req_id, uint64_t* buffer, uint64_t* len, uint64_t* ts);
 #endif
 }
@@ -52,7 +52,7 @@ Transition* jpeg_t_list[T_SIZE] =  {&jpeg::dma_read_arbiter, &jpeg::dma_read_mem
 
 void advance_dma(uint64_t ts){
     DMA_ADVANCE_UNTIL_TIME(ts);
-    // mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr
+    // mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr
     while(!jpeg::dma_read_requests.empty()){
         jpeg::token_class_iasbrr* token = jpeg::dma_read_requests.front();
         jpeg::dma_read_requests.pop_front();
@@ -145,35 +145,12 @@ int jpeg_perf_sim_finished(){
         return 0;
     }
 
-    LOOP_TS(trigger(t));
-    uint64_t time = min_time_g(jpeg_t_list, T_SIZE);
+    uint64_t time = trigger_and_min_time_g(jpeg_t_list, T_SIZE);
     if (time == lpn::LARGE){
-        DMA_ACTIVE(&time);
-        if (time != lpn::LARGE){
-            return 0;
-        }
         for(auto &kv : io_req_map) {
             std::cerr << "io_req_map[" << kv.first << "].size() = " << kv.second.size() << "\n";
         }
         for(auto &kv : io_req_map) {
-            // if(kv.first == 0){
-            //     for (int i = 0; i < T_SIZE; i++){
-            //         auto t = jpeg_t_list[i];
-            //         // loop through input places and output places
-            //         for (int j = 0; j < t->p_input.size(); j++){
-            //             auto p = t->p_input[j];
-            //             if(p->tokensLen() > 0){
-            //                 printf("t %s, p %s, p->tokens.size() %d\n", t->id.c_str(), p->id.c_str(), p->tokensLen());
-            //             }
-            //         }
-            //         for (int j = 0; j < t->p_output.size(); j++){
-            //             auto p = t->p_output[j];
-            //             if(p->tokensLen() > 0){
-            //                 printf("t %s, p %s, p->tokens.size() %d\n", t->id.c_str(), p->id.c_str(), p->tokensLen());
-            //             }
-            //         }
-            //     }
-            // }
             assert(kv.second.size() == 0);
         }
         return 1;
@@ -190,14 +167,12 @@ void jpeg_advance_until_time(uint64_t ts_in_nano){
     // for(int tag=0; tag<6; tag++){
     //     printf("total req in tag %d: %lu\n", tag, io_req_map[tag].size());
     // }
-
     uint64_t ts = ts_in_nano*1000;
     uint64_t time = 0, prev_time = 0; 
     uint64_t start = 0;
     while(time <= ts){
         while(time <= ts){
-            LOOP_TS(trigger(t));
-            time = min_time_g(jpeg_t_list, T_SIZE);
+            time = trigger_and_min_time_g(jpeg_t_list, T_SIZE);
             uint64_t child_active_time = 0;
             int active = DMA_ACTIVE(&child_active_time);
             if (active == 1 && time > child_active_time){

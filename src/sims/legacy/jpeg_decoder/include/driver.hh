@@ -2,13 +2,13 @@
 #include <deque>
 #include <cstdint>
 #include "../perf_sim/token_types.hh"
+#include <config/config.h>
 
 namespace jpeg{
     enum class CstStr {
         DMA_READ=0,
         DMA_WRITE=1,
-        // JPEG_SCALE_TO_PS=500,
-        JPEG_SCALE_TO_PS=5347, // 187 Mhz
+        JPEG_SCALE_TO_PS=1000000/CONFIG_JPEG_FREQ,
         
     };
     extern std::deque<token_class_iasbrr*> dma_read_requests;

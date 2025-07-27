@@ -17,6 +17,6 @@ $(bin_vta_bm): $(vta_bm_objs) $(lib_pciebm) $(lib_pcie) $(lib_base) $(lib_mem) $
 
 CLEAN := $(bin_vta_bm) $(vta_bm_objs)
 
-ALL := $(bin_vta_bm)
+DSIM_ALL += $(bin_vta_bm)
 
 include mk/subdir_post.mk

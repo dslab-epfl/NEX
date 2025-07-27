@@ -7,7 +7,7 @@
 // this is not necessary to implement for every accelerators
 extern "C" {
     void protoacc_lpn_init();
-    void protoacc_sim_start(int pid, uint64_t msg_start_addr, uint64_t serialized_msg_addr, uint64_t descriptor_table_addr, uint64_t src_base_addr, uint64_t ts);
+    void protoacc_sim_start(int mem_fd, uint64_t mem_base, uint64_t stringobj_output_addr, uint64_t string_ptr_output_addr, uint64_t descriptor_table_addr, uint64_t src_base_addr, uint64_t ns_ts);
     int protoacc_perf_sim_finished(uint64_t* finished_task);
     void protoacc_advance_until_time(uint64_t ts);
 }

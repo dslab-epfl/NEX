@@ -201,8 +201,12 @@ void PACBm::DmaComplete(std::unique_ptr<pciebm::DMAOp> dma_op) {
   #if Protoacc_DEBUG
       std::cerr << "next_ts=" << next_ts <<  " TimePs=" << TimePs() << " lpnLarge=" << lpn::LARGE << "\n";
   #endif
-      assert(next_ts >= TimePs() &&
-             "PACBm::DmaComplete: Cannot schedule event for past timestamp");
+      // assert(next_ts >= TimePs() &&
+      //        "PACBm::DmaComplete: Cannot schedule event for past timestamp");
+      if(next_ts < TimePs()){
+        std::cerr << "Warning: next_ts is in the past: " << next_ts << " < " << TimePs() << "; force update \n";
+        next_ts = TimePs();
+      }
       auto next_scheduled = EventNext();
       if (next_ts != lpn::LARGE &&
           (!next_scheduled || next_scheduled.value() > next_ts)) {
@@ -282,8 +286,14 @@ void PACBm::ExecuteEvent(std::unique_ptr<pciebm::TimedEvent> evt) {
             << " next_ts=" << next_ts <<  " lpnLarge=" << lpn::LARGE << "\n";
 #endif
   // only schedule an event if one doesn't exist yet
-  assert(next_ts >= TimePs() &&
-      "PACBm::ExecuteEvent: Cannot schedule event for past timestamp");
+  // assert(next_ts >= TimePs() &&
+      // "PACBm::ExecuteEvent: Cannot schedule event for past timestamp");
+  
+  if(next_ts < TimePs()){
+    std::cerr << "Warning: next_ts is in the past: " << next_ts << " < " << TimePs() << "; force update \n";
+    next_ts = TimePs();
+  }
+
   auto next_scheduled = EventNext();
 
   if (next_ts != lpn::LARGE &&

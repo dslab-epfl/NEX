@@ -772,6 +772,14 @@ class Kconfig(object):
                 add('{}{}="{}"\n'
                     .format(self.config_prefix, sym.name, escape(val)))
 
+            else:  # sym.orig_type in _INT_HEX:
+                if sym.orig_type is HEX and \
+                   not val.startswith(("0x", "0X")):
+                    val = "0x" + val
+
+                add("{}{}={}\n"
+                    .format(self.config_prefix, sym.name, val))
+
         return "".join(chunks)
 
     def write_config(self, filename=None, header=None, save_old=True,

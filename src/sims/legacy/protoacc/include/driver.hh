@@ -21,11 +21,12 @@ namespace protoacc{
         READ=0,
         WRITE=1,
     };
+
+    extern std::deque<token_class_iasbrr*> dma_read_requests;
+    extern std::deque<token_class_iasbrr*> dma_write_requests;
+    extern std::deque<token_class_iasbrr*> dma_read_resp;
+    extern std::deque<token_class_iasbrr*> dma_write_resp;
 }
 
-extern std::deque<token_class_iasbrr*> dma_read_requests;
-extern std::deque<token_class_iasbrr*> dma_write_requests;
-extern std::deque<token_class_iasbrr*> dma_read_resp;
-extern std::deque<token_class_iasbrr*> dma_write_resp;
 
 extern std::vector<int> ids;

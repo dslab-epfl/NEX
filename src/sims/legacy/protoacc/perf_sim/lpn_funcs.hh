@@ -8,19 +8,13 @@
 #include "places.hh"
 #include "token_types.hh"
 #include "../include/driver.hh"
+#include <config/config.h>
 
 #define AQ_LEN 16
 
-extern "C" {
-    void mem_advance_until_time(uint64_t ts);
-    int mem_active(uint64_t* next_active_ts);
-    int mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr);
-    int mem_get(uint64_t* ref_ptr, uint64_t* req_id, uint64_t* buffer, uint64_t* len);
-}
-
 namespace protoacc{  
     // in picoseconds
-    uint64_t CYCLEPERIOD = 500; // 2Ghz
+    uint64_t CYCLEPERIOD = 1000000/CONFIG_PROTOACC_FREQ;
 }
 
 std::function<int()> take_1_token() {
@@ -521,14 +515,14 @@ std::function<void(BasePlace*)> pass_token_match_port(Place<T>* from_place, int 
 std::function<void(BasePlace*)> call_get_mem(int type) {
     auto out_weight = [&, type](BasePlace* output_place) -> void {
         if(type == 0){
-            assert(!dma_read_resp.empty());
-            auto token = dma_read_resp.front(); 
-            dma_read_resp.pop_front();
+            assert(!protoacc::dma_read_resp.empty());
+            auto token = protoacc::dma_read_resp.front(); 
+            protoacc::dma_read_resp.pop_front();
             output_place->pushToken(token);
         }else{
-            assert(!dma_write_resp.empty());
-            auto token = dma_write_resp.front();
-            dma_write_resp.pop_front();
+            assert(!protoacc::dma_write_resp.empty());
+            auto token = protoacc::dma_write_resp.front();
+            protoacc::dma_write_resp.pop_front();
             output_place->pushToken(token);
         }
     };
@@ -538,9 +532,9 @@ template<typename T>
 std::function<void(BasePlace*)> call_put_mem(Place<T>* from_place, int type) {
     auto out_weight = [&, from_place ,type](BasePlace* output_place) -> void {
         if(type == 0){
-            dma_read_requests.push_back(from_place->tokens[0]);
+            protoacc::dma_read_requests.push_back(from_place->tokens[0]);
         }else{
-            dma_write_requests.push_back(from_place->tokens[0]);
+            protoacc::dma_write_requests.push_back(from_place->tokens[0]);
         }
     };
     return out_weight;
@@ -576,11 +570,11 @@ std::function<uint64_t()> field_end_cond_delay(Place<T>* from_place) {
 std::function<uint64_t()> delay_0_if_resp_ready(int type) {
     auto delay = [&, type]() -> uint64_t {
         if(type == 0){
-            if(dma_read_resp.size() > 0){
+            if(protoacc::dma_read_resp.size() > 0){
                 return 0;
             }
         }else{
-            if(dma_write_resp.size() > 0){
+            if(protoacc::dma_write_resp.size() > 0){
                 return 0;
             }
         }
@@ -602,11 +596,11 @@ std::function<uint64_t()> simple_axi_delay(Place<T>* dependent_place) {
 std::function<uint64_t()> delay_latency_if_resp_ready(int type, int _latency) {
     auto delay = [&, type, _latency]() -> uint64_t {
         if(type == 0){
-            if(dma_read_resp.size() > 0){
+            if(protoacc::dma_read_resp.size() > 0){
                 return _latency*1000;
             }
         }else{
-            if(dma_write_resp.size() > 0){
+            if(protoacc::dma_write_resp.size() > 0){
                 return _latency*1000;
             }
         }

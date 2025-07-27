@@ -14,8 +14,6 @@
 #include <sims/sim.h>
 #include <capstone/x86.h>
 
-extern uint64_t read_vts();
-
 #define WRITE_REG_TYPE 0
 #define READ_REG_TYPE 1
 #define START_TYPE 2
@@ -235,7 +233,7 @@ void hw_init(){
   name->sync_period = link_delay; \
   name->sync = true; \
   name->advance_till_ts = 0; \
-  name->pid_fd = -1; \
+  name->dma_fd = -1; \
   name->pid = -1; \
   name->dev_id = dev_id_counter++; \
   name->active = 0; \
@@ -249,14 +247,14 @@ void hw_init(){
   name->sync_period = link_delay; \
   name->sync = true; \
   name->advance_till_ts = 0; \
-  name->pid_fd = -1; \
+  name->dma_fd = -1; \
   name->pid = -1; \
   name->dev_id = dev_id_counter++; \
   name->active = 0; \
   name->issued_task_cnt = 0; \
   name->mem_side_channel = (SimbricksMemState*) malloc(sizeof(SimbricksMemState)); \
   name->mem_side_channel->socket_path = mem_path; \
-  name->mem_side_channel->pid_fd = -1; \
+  name->mem_side_channel->dma_fd = -1; \
   pci_simbricks_realize((PCIDevice*) name);
 
   for (int i = 0; i < CONFIG_NUM_JPEG; i++) {
@@ -271,7 +269,7 @@ void hw_init(){
       char* jpeg_sock_path = malloc(200);
       sprintf(jpeg_sock_path, "/tmp/jpeg_rtl_sock.%d", i);
       NEW_RTL_ADPATER(jpeg_array[i], jpeg_sock_path, CONFIG_JPEG_LINK_DELAY);
-      jpeg_array[i]->pid_fd = dma_fd;
+      jpeg_array[i]->dma_fd = dma_fd;
       jpeg_array[i]->dma_base_addr = dma_base;
     }else{
       char* jpeg_sock_path = malloc(200);
@@ -279,9 +277,9 @@ void hw_init(){
       char* jpeg_mem_msc_path = malloc(200);
       sprintf(jpeg_mem_msc_path, "/tmp/jpeg_dsim_msc_sock.%d", i);
       NEW_DSIM_ADPATER(jpeg_array[i], jpeg_sock_path, jpeg_mem_msc_path, CONFIG_JPEG_LINK_DELAY);
-      jpeg_array[i]->pid_fd = dma_fd;
+      jpeg_array[i]->dma_fd = dma_fd;
       jpeg_array[i]->dma_base_addr = dma_base;
-      jpeg_array[i]->mem_side_channel->pid_fd = dma_fd;
+      jpeg_array[i]->mem_side_channel->dma_fd = dma_fd;
       jpeg_array[i]->mem_side_channel->dma_base_addr = dma_base;
     }
   }
@@ -300,7 +298,7 @@ void hw_init(){
       char* vta_sock_path = malloc(200);
       sprintf(vta_sock_path, "/tmp/vta_rtl_sock.%d", i);
       NEW_RTL_ADPATER(vta_array[i], vta_sock_path, CONFIG_VTA_LINK_DELAY);
-      vta_array[i]->pid_fd = dma_fd;
+      vta_array[i]->dma_fd = dma_fd;
       vta_array[i]->dma_base_addr = dma_base;
     }else{
       char* vta_sock_path = malloc(200);
@@ -308,9 +306,9 @@ void hw_init(){
       char* vta_mem_path = malloc(200);
       sprintf(vta_mem_path, "/tmp/vta_dsim_msc_sock.%d", i);
       NEW_DSIM_ADPATER(vta_array[i], vta_sock_path, vta_mem_path, CONFIG_VTA_LINK_DELAY);
-      vta_array[i]->pid_fd = dma_fd;
+      vta_array[i]->dma_fd = dma_fd;
       vta_array[i]->dma_base_addr = dma_base;
-      vta_array[i]->mem_side_channel->pid_fd = dma_fd;
+      vta_array[i]->mem_side_channel->dma_fd = dma_fd;
       vta_array[i]->mem_side_channel->dma_base_addr = dma_base;
     }
   }
@@ -328,7 +326,7 @@ void hw_init(){
       char* protoacc_sock_path = malloc(200);
       sprintf(protoacc_sock_path, "/tmp/protoacc_rtl_sock.%d", i);
       NEW_RTL_ADPATER(protoacc_array[i], protoacc_sock_path, CONFIG_PROTOACC_LINK_DELAY);
-      protoacc_array[i]->pid_fd = dma_fd;
+      protoacc_array[i]->dma_fd = dma_fd;
       protoacc_array[i]->dma_base_addr = dma_base;
     }else{
       char* protoacc_sock_path = malloc(200);
@@ -336,9 +334,9 @@ void hw_init(){
       char* protoacc_mem_path = malloc(200);
       sprintf(protoacc_mem_path, "/tmp/protoacc_dsim_msc_sock.%d", i);
       NEW_DSIM_ADPATER(protoacc_array[i], protoacc_sock_path, protoacc_mem_path, CONFIG_PROTOACC_LINK_DELAY);
-      protoacc_array[i]->pid_fd = dma_fd;
+      protoacc_array[i]->dma_fd = dma_fd;
       protoacc_array[i]->dma_base_addr = dma_base;
-      protoacc_array[i]->mem_side_channel->pid_fd = dma_fd;
+      protoacc_array[i]->mem_side_channel->dma_fd = dma_fd;
       protoacc_array[i]->mem_side_channel->dma_base_addr = dma_base;
     }
     safe_printf("ProtoAcc %d, sim ptr %p \n", i, protoacc_array[i]);
@@ -370,6 +368,16 @@ void hw_init(){
 
 void hw_deinit(){
   disconnect_all_simulators();
+
+  pid_t setup_child = fork();
+  if(setup_child == 0){
+      char command[100];
+      sprintf(command, "rm /tmp/*sock*");
+      char *args[] = {"/bin/sh", "-c", command, NULL};
+      execvp(args[0], args);
+      perror("execvp failed");
+  }
+  waitpid(setup_child, NULL, 0);
 }
 
 void* eager_sync_accelerator_manager(void* args){
@@ -593,14 +601,26 @@ void handle_update(reg_updates_t* current, uint64_t virtual_ts, int pid){
       uint32_t ctrl_pid = (regs->ctrl >> 32) & 0xFFFFFFFF;
       uint32_t ctrl_msg = regs->ctrl & 0xFFFFFFFF;
       if(ctrl_pid == 0){
-        // not specified, default to the current one handling
+        // not specified, default to the current one faulting, so needs to lock the ctrl->lock to protect access
         ctrl_pid = pid;
+        assert(ctrl_msg == 0x1000 || ctrl_msg == 0x2000);
+        // only no pid specific messages can be used without pid
       }else{
         safe_printf("ctrl pid %d, current pid %d\n", ctrl_pid, pid);
-        assert(pid == ctrl_pid);
+        // allow it to differ
+        // assert(pid == ctrl_pid);
+        if(pid != ctrl_pid){
+           // not my tick 
+           regs->ctrl = regs->ctrl + 1; // to make it different
+           return;
+        }
       }
       bpf_sched_update_state_per_pid(ctrl_pid, ctrl_msg);
       // bpf_sched_update_state(current->value);
+
+      regs->ctrl = 0;
+      *(uint64_t*)MMIO_ADDR_OF_X(BPF_SCHED, 0, 0) = regs->ctrl;
+
       break;
     }
     case JPEG_DECODER:{
@@ -696,6 +716,10 @@ void handle_update(reg_updates_t* current, uint64_t virtual_ts, int pid){
         simbricks_mmio_write(protoacc_dev, 0, 0x0, regs->ctrl, 4);
         protoacc_dev->active = 1;
         protoacc_dev->issued_task_cnt++;
+
+        // if(protoacc_dev->issued_task_cnt%100 == 0){
+          safe_printf("protoacc_dev issued task count %d; id %d, virtual_ts_us %lu\n", protoacc_dev->issued_task_cnt, current->dev, virtual_ts/1000);
+        // }
   
         regs->ctrl &= ~0x1;
         *(uint64_t*)MMIO_ADDR_OF_X(PROTOACC, current->dev, 0) = regs->ctrl;
@@ -752,6 +776,7 @@ void handle_fetch(reg_updates_t* current, uint64_t virtual_ts, int pid){
       regs->completed_msg = current->value;
       if(protoacc_dev->issued_task_cnt == regs->completed_msg){
         protoacc_dev->active = 0;
+        safe_printf("protoacc_dev completed %d; id %d, virtual_ts_us %lu\n", regs->completed_msg, current->dev, virtual_ts/1000);
       }
       reg_addr_reg = (uintptr_t)protoacc_regs_arr[current->dev];
       break;
@@ -886,15 +911,15 @@ void handle_write(ucontext_t *ctx, decoded_insn_info* insn_info, uint64_t virtua
     // Start decoding image
     if (regs->ctrl & CTRL_REG_START_BIT) {
       safe_printf("Starting JPEG decoding %d\n", dev);
-      if(jpeg_dev->pid_fd == -1){
-        jpeg_dev->pid_fd = open_pid_mem(pid);
+      if(jpeg_dev->dma_fd == -1){
+        jpeg_dev->dma_fd = open_pid_mem(pid);
         jpeg_dev->open_fd_pid = pid;
       }
       jpeg_dev->read_addr_base = regs->src;
       jpeg_dev->write_addr_base = regs->dst;
       if(jpeg_dev->mem_side_channel != NULL){
         jpeg_dev->mem_side_channel->pid = pid;
-        jpeg_dev->mem_side_channel->pid_fd = jpeg_dev->pid_fd;
+        jpeg_dev->mem_side_channel->dma_fd = jpeg_dev->dma_fd;
         jpeg_dev->mem_side_channel->read_addr_base = regs->src;
         jpeg_dev->mem_side_channel->write_addr_base = regs->dst;
       }
@@ -921,15 +946,15 @@ void handle_write(ucontext_t *ctx, decoded_insn_info* insn_info, uint64_t virtua
     DEBUG_MMIO ("VTA write %lx, %d\n", write_value, dev);
     if ((regs->_0x00 & 0x1) == 0x1) {
       add_trace_event(type_of_accel, START_TYPE, virtual_ts);
-      if(vta_dev->pid_fd == -1){
-        vta_dev->pid_fd = open_pid_mem(pid);
+      if(vta_dev->dma_fd == -1){
+        vta_dev->dma_fd = open_pid_mem(pid);
         vta_dev->open_fd_pid = pid;
       }
       vta_dev->read_addr_base = regs->_0x24;
       vta_dev->write_addr_base = regs->_0x24;
       if(vta_dev->mem_side_channel != NULL){
         vta_dev->mem_side_channel->pid = pid;
-        vta_dev->mem_side_channel->pid_fd = vta_dev->pid_fd;
+        vta_dev->mem_side_channel->dma_fd = vta_dev->dma_fd;
         vta_dev->mem_side_channel->read_addr_base = regs->_0x24;
         vta_dev->mem_side_channel->write_addr_base = regs->_0x24;
       }
@@ -968,15 +993,15 @@ void handle_write(ucontext_t *ctx, decoded_insn_info* insn_info, uint64_t virtua
     if ((regs->ctrl & 0x1) == 1) {
       uint32_t max_fieldno = regs->min_max_fieldno & 0xFFFFFFFF;
       uint32_t min_fieldno = (regs->min_max_fieldno >> 32) & 0xFFFFFFFF;
-      if(protoacc_dev->pid_fd == -1){
-        protoacc_dev->pid_fd = open_pid_mem(pid);
+      if(protoacc_dev->dma_fd == -1){
+        protoacc_dev->dma_fd = open_pid_mem(pid);
         protoacc_dev->open_fd_pid = pid;
       }
       protoacc_dev->read_addr_base = 0;
       protoacc_dev->write_addr_base = 0;
       if(protoacc_dev->mem_side_channel != NULL){
         protoacc_dev->mem_side_channel->pid = pid;
-        protoacc_dev->mem_side_channel->pid_fd = protoacc_dev->pid_fd;
+        protoacc_dev->mem_side_channel->dma_fd = protoacc_dev->dma_fd;
         protoacc_dev->mem_side_channel->read_addr_base = 0;
         protoacc_dev->mem_side_channel->write_addr_base = 0;
       }
@@ -1197,22 +1222,22 @@ void handle_hw_free_resources(pid_t child){
   // return;
   for(int i = 0; i < CONFIG_NUM_JPEG; i++){
     if(jpeg_array[i]->open_fd_pid == child){
-      close_pid_mem(jpeg_array[i]->pid_fd);
-      jpeg_array[i]->pid_fd = -1;
+      close_pid_mem(jpeg_array[i]->dma_fd);
+      jpeg_array[i]->dma_fd = -1;
     }
   }
 
   for(int i = 0; i < CONFIG_NUM_VTA; i++){
     if(vta_array[i]->open_fd_pid == child){
-      close_pid_mem(vta_array[i]->pid_fd);
-      vta_array[i]->pid_fd = -1;
+      close_pid_mem(vta_array[i]->dma_fd);
+      vta_array[i]->dma_fd = -1;
     }
   }
   
   for(int i = 0; i < CONFIG_NUM_PROTOACC; i++){
     if(protoacc_array[i]->open_fd_pid == child){
-      close_pid_mem(protoacc_array[i]->pid_fd);
-      protoacc_array[i]->pid_fd = -1;
+      close_pid_mem(protoacc_array[i]->dma_fd);
+      protoacc_array[i]->dma_fd = -1;
     }
   }
 }

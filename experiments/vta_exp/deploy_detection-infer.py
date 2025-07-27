@@ -116,19 +116,8 @@ def main():
     # Connect to tracker or RPC server and request remote inference device.
     # ---------------------------------------------------------------------
     # Tracker handles hands out leases to remote inference devices
-    '''
-    tracker_host = os.environ.get("TVM_TRACKER_HOST", None)
-    tracker_port = os.environ.get("TVM_TRACKER_PORT", None)
-    # If above are unset, skip Tracker and instead connect to device directly
-    device_host = os.environ.get("VTA_RPC_HOST", "127.0.0.1")
-    device_port = os.environ.get("VTA_RPC_PORT", "9091")
-    assert tvm.runtime.enabled("rpc")
-    '''
 
     for i in range(reps):
-        # sleep_for = random.randint(0, 10)
-        # print(f"Rep {i} sleeping for {sleep_for} s")
-        # time.sleep(sleep_for)
         e2e_start = time.time_ns()
         request_start = time.time_ns()
         '''
@@ -156,27 +145,13 @@ def main():
         # Request remote device
         ctx = remote.ext_dev(0) if device == "vta" else remote.cpu(0)
 
-        ####################################
-        # Perform image detection inference.
-        # ----------------------------------
-        # Graph executor
         m = graph_executor.GraphModule(lib["default"](ctx))
         
         num_inferences = batch_size // env.BATCH
         print(f"Rep {i}: Running {num_inferences} inferences")
 
-        #m.set_input("data", data)
-
-        if int(os.getenv("GEM5_CP", 0)):
-            print("Checkpointing gem5")
-            os.system("m5 checkpoint")
-
         cid = 999
         if cid == 999:
-            # my_var = os.getenv('ACCVM_MMIO_BASE')
-            # memory_address = int(my_var, 16)
-            # print(memory_address)
-            # bpf_sched = memory_address
             ptr = ctypes.cast(bpf_sched, ctypes.POINTER(ctypes.c_int))
             ptr.contents.value = 0x1000
             nex_lib.tick_nex()
@@ -189,25 +164,20 @@ def main():
         m.set_input("data", data)
         inference_start = time.time_ns()
         
-        # for j in range(num_inferences):
-            # Set the network parameters and inputs
-            # Perform inference
         m.run()
         inference_dur = time.time_ns() - inference_start
 
         real_end = time.clock_gettime(cid)
-        # release resources
-        #remote._sess.get_function("CloseRPCConnection")()
 
         e2e_dur = time.time_ns() - e2e_start
         print(f"Rep {i}: Requesting remote device {request_dur:_} ns")
         print(f"Rep {i}: Sending and loading model {upload_lib_dur:_} ns")
         print(f"Rep {i}: Warmup duration {inference_start - warmup_start:_} ns")
         print(f"Rep {i}: Pure inference duration {inference_dur:_} ns")
-        print(f"Rep {i}: End-to-end latency: {e2e_dur:_} ns")
-        print(f"Rep {i}: Real latency: {real_end-real_start:_} ns")
+        print(f"Rep {i}: Time taken {(inference_dur+inference_start - warmup_start)} ns")
+        print(f"Rep {i}: Real latency {real_end-real_start} s")
 
-        for j in range(4):
+        for j in range(2):
             warmup_start = time.time_ns()
             m.set_input("data", data)
             inference_start = time.time_ns()
@@ -215,65 +185,12 @@ def main():
             inference_dur = time.time_ns() - inference_start
             print(f"Rep {j}: Warmup duration {inference_start - warmup_start:_} ns")
             print(f"Rep {j}: Pure inference duration {inference_dur:_} ns")
+            print(f"Rep {j}: Time taken {(inference_dur+inference_start - warmup_start)} ns")
 
         if cid == 999:
             ptr.contents.value = 0x2000
             nex_lib.tick_nex()
             shm.close()
-
-    #############################################
-    # Render inference image and detection boxes.
-    # -------------------------------------------
-    # Can skip this for faster simulations.
-    if not debug:
-        return
-
-    # Get detection results from out
-    output_start = time.time_ns()
-    thresh = 0.5
-    nms_thresh = 0.45
-    tvm_out = []
-    for i in range(2):
-        layer_out = {}
-        layer_out["type"] = "Yolo"
-        # Get the yolo layer attributes (n, out_c, out_h, out_w, classes, total)
-        layer_attr = m.get_output(i * 4 + 3).numpy()
-        layer_out["biases"] = m.get_output(i * 4 + 2).numpy()
-        layer_out["mask"] = m.get_output(i * 4 + 1).numpy()
-        out_shape = (
-            layer_attr[0],
-            layer_attr[1] // layer_attr[0],
-            layer_attr[2],
-            layer_attr[3],
-        )
-        layer_out["output"] = m.get_output(i * 4).numpy().reshape(out_shape)
-        layer_out["classes"] = layer_attr[4]
-        tvm_out.append(layer_out)
-        thresh = 0.560
-
-    # Load network we perform inference on. The is just used to decode the
-    # outputs.
-    net = __darknetffi__.dlopen(darknet_lib_path).load_network(
-        cfg_path.encode("utf-8"), weights_path.encode("utf-8"), 0
-    )
-
-    # Render detection results
-    img = darknet.load_image_color(img_path)
-    _, im_h, im_w = img.shape
-    dets = yolo_detection.fill_network_boxes(
-        (net.w, net.h), (im_w, im_h), thresh, 1, tvm_out
-    )
-    last_layer = net.layers[net.n - 1]
-    yolo_detection.do_nms_sort(dets, last_layer.classes, nms_thresh)
-    yolo_detection.draw_detections(
-        font_path, img, dets, thresh, names, last_layer.classes
-    )
-    plt.imshow(img.transpose(1, 2, 0))
-    plt.savefig("deploy_detection-infer-result.png")
-
-    output_dur = time.time_ns() - output_start
-    print(f"Preparing and dumping output took {output_dur:_} ns")
-
 
 if __name__ == "__main__":
     main()

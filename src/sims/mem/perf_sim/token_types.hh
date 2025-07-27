@@ -28,7 +28,7 @@ std::map<std::string, int>* asDictionary() override{
 CREATE_TOKEN_TYPE(
 token_class_ralmtrd,
 uint64_t req_id;
-int pid_fd;
+int dma_fd;
 uint64_t addr;
 uint64_t len;
 uint64_t mem_buffer_ptr;
@@ -38,7 +38,7 @@ int dev_id;
 std::map<std::string, int>* asDictionary() override{
     std::map<std::string, int>* dict = new std::map<std::string, int>;
     dict->operator[]("req_id")=(int)req_id;
-    dict->operator[]("pid_fd")=(int)pid_fd;
+    dict->operator[]("dma_fd")=(int)dma_fd;
     dict->operator[]("addr")=(int)addr;
     dict->operator[]("len")=(int)len;
     dict->operator[]("mem_buffer_ptr")=(int)mem_buffer_ptr;

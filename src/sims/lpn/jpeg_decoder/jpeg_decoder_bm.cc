@@ -183,7 +183,7 @@ void JPEGBm::DmaComplete(std::unique_ptr<pciebm::DMAOp> dma_op) {
 
     Registers_.isBusy = 0;
     TransitionCountLog(t_list, T_SIZE);
-    //MsiXIssue(0);
+    MsiXIssue(0);
     return ;
   }
 
@@ -328,7 +328,7 @@ void JPEGBm::ExecuteEvent(std::unique_ptr<pciebm::TimedEvent> evt) {
       // Registers_.ctrl = 0x2;
       Registers_.isBusy = 0;
       TransitionCountLog(t_list, T_SIZE);
-      //MsiXIssue(0);
+      MsiXIssue(0);
       return;
   }
  

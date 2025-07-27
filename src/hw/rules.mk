@@ -1,6 +1,7 @@
 include mk/subdir_pre.mk
 
 # Object files for hw module
+
 hw_objs := $(addprefix $(d), \
 	mem_side_channel.o scx_pci.o)
 

@@ -32,7 +32,7 @@ static void pci_dma_read(SimbricksMemState* simbricks, uint64_t addr, void *buff
     // safe_printf("Simulated DMA read from addr: %p, size %d\n", addr, len);
     // assert(addr >= simbricks->read_addr_base);
     // safe_printf("DMA offset into base %p\n", addr - simbricks->read_addr_base);
-    size_t size = pread(simbricks->pid_fd, buffer, len, simbricks->read_addr_base + addr);
+    size_t size = pread(simbricks->dma_fd, buffer, len, simbricks->read_addr_base + addr);
     // assert(size == len);
     // memcpy(buffer, (void*)simbricks->dma_base_addr + addr - simbricks->read_addr_base, len);
     
@@ -46,7 +46,7 @@ static void pci_dma_write(SimbricksMemState* simbricks, uint64_t addr, const voi
     // Simulated DMA write
     // safe_printf("Simulated DMA write to addr: %lu, size %d\n", addr, len);
     // For correct results, perform this write to the actual memory
-    // pwrite(simbricks->pid_fd, buffer, len, simbricks->write_addr_base + addr);
+    // pwrite(simbricks->dma_fd, buffer, len, simbricks->write_addr_base + addr);
 }
 
 volatile union SimbricksProtoMemM2H *outAlloc(SimbricksMemState* simbricks) {
@@ -78,7 +78,7 @@ static void mem_side_channel_comm_h2m_process(
             // }
             volatile struct SimbricksProtoMemM2HReadcomp *rc;
 
-            safe_printf("DEBUG, side channel mem read %d\n", req_len);
+            // safe_printf("DEBUG, side channel mem read %d\n", req_len);
 
             rc = &out_msg->readcomp;
             rc->req_id = read_msg->req_id;

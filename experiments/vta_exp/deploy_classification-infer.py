@@ -143,8 +143,6 @@ def main():
                 # connect
                 tracker_host = os.environ.get("TVM_TRACKER_HOST", "0.0.0.0")
                 tracker_port = int(os.environ.get("TVM_TRACKER_PORT", "9091"))
-                # tracker = rpc.connect_tracker(tracker_host, tracker_port)
-                # remote = tracker.request('tsim', priority=1, session_timeout=60)
                 remote = measure_methods.request_remote(
                     env.TARGET, tracker_host, int(tracker_port), timeout=0
                 )
@@ -191,39 +189,30 @@ def main():
         m.set_input("data", image)
         inference_start = time.time_ns()
 
-        # for j in range(num_inferences):
         m.run()
-            # Set the network parameters and inputs
-            # Perform inference
-            # Get output
+
         inference_dur = time.time_ns() - inference_start
         real_end = time.clock_gettime(cid)
-        
-        # tvm_output = m.get_output(
-        #         0, tvm.nd.empty((env.BATCH, 1000), "float32", remote.cpu(0))
-        #     ).numpy()
-        # release resources
 
         e2e_dur = time.time_ns() - e2e_start
-        #print(f"Rep {i}: Requesting remote device {request_dur:_} ns")
-        #print(f"Rep {i}: Sending and loading model {upload_lib_dur:_} ns")
         print(f"Rep {i}: Warmup duration {inference_start - warmup_start:_} ns")
         print(f"Rep {i}: Pure inference duration {inference_dur:_} ns")
-        #print(f"Rep {i}: End-to-end latency: {e2e_dur:_} ns")
-        print(f"Rep {i}: Real latency: {real_end-real_start:_} ns")
+        print(f"Rep {i}: Time taken {(inference_dur+inference_start - warmup_start)} ns")
+        print(f"Rep {i}: Real latency {real_end-real_start} s")
         
-        for i in range(10):
+        repeat = 2
+        if model_name == "resnet50_v1":
+            repeat = 0
+            
+        for i in range(repeat):
             warmup_start = time.time_ns()
             m.set_input("data", image)
             inference_start = time.time_ns()
             m.run()
-            # Set the network parameters and inputs
-            # Perform inference
-            # Get output
             inference_dur = time.time_ns() - inference_start
             print(f"Rep {i}: Warmup duration {inference_start - warmup_start:_} ns")
             print(f"Rep {i}: Pure inference duration {inference_dur:_} ns")
-            print(f"Rep {i}: Total inference duration {(inference_dur+inference_start - warmup_start):_} ns")
+            print(f"Rep {i}: Time taken {(inference_dur+inference_start - warmup_start)} ns")
         if not local_session:
             remote._sess.get_function("CloseRPCConnection")()
 
@@ -234,18 +223,6 @@ def main():
 
     if not debug:
         return
-
-    # # read classification categories
-    # synset = eval(open(f"{mxnet_dir}/synset.txt").read())
-
-    # # Report top-5 classification results
-    # for b in range(env.BATCH):
-    #     top_categories = np.argsort(tvm_output[b])
-    #     print(f"\nprediction for sample {b}")
-    #     for i in range(1, 6):
-    #         print(
-    #             f"\t#{i}:{synset[top_categories[-i]]} {tvm_output[b][top_categories[-i]]}"
-    #         )
 
 if __name__ == "__main__":
     main()

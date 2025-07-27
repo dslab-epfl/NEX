@@ -8,10 +8,11 @@
 #include "places.hh"
 #include "token_types.hh"
 #include "../include/driver.hh"
+#include <config/config.h>
 
 namespace protoacc{  
     // in picoseconds
-    uint64_t CYCLEPERIOD = 500; // 2Ghz
+    uint64_t CYCLEPERIOD = 1000000/CONFIG_PROTOACC_FREQ;
 }
 
 std::function<int()> take_1_token() {

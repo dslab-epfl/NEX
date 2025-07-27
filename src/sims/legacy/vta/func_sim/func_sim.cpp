@@ -49,56 +49,12 @@ enum VMemCopyType {
 };
 
 static int id_counter = 0;
+static uint64_t base_addr = 0;
 
 namespace vta {
 
-static void *alloc_base = nullptr;
-static uint64_t alloc_phys_base = 1ULL * 1024 * 1024 * 1024;
-static size_t alloc_size = 512 * 1024 * 1024;
-static size_t alloc_off = 0;
-
-static void alloc_init()
-{
-    if (alloc_base)
-      return;
-
-    const char* filePath = "/tmp/vta_mem_area";
-
-    // Open the file
-    int fd = open(filePath, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (fd < 0) {
-        std::cerr << "VTA funcsim: Opening file failed" << std::endl;
-        abort();
-    }
-
-    // Ensure the file is of the appropriate size
-    struct stat st;
-    if (fstat(fd, &st) == -1) {
-      std::cerr << "Error getting file information" << std::endl;
-      close(fd);
-      abort();
-    }
-    if (st.st_size < alloc_size) {
-      if (ftruncate(fd, alloc_size) == -1) {
-        std::cerr << "Error setting size of the file" << std::endl;
-        close(fd);
-        abort();
-      }
-    }
-
-    // Memory map the file
-    void *mem = mmap(NULL, alloc_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (mem == MAP_FAILED) {
-        std::cerr << "Memory mapping failed" << std::endl;
-        close(fd);
-        abort();
-    }
-    alloc_base = mem;
-    std::cerr << "VTA funcsim: allocator initialized" << std::endl;
-}
-
 static void* get_virtual(uint64_t phy_addr){
-  return (void*)(phy_addr + + (uint64_t)alloc_base);
+  return (void*)(phy_addr+base_addr);
 }
 
 namespace vmem {
@@ -591,16 +547,13 @@ class Profiler {
 
 class Device {
  public:
-  Device() {
+  Device(uint64_t dma_base_addr){
     prof_ = Profiler::ThreadLocal();
     dram_ = DRAM::Global();
-    if (alloc_base)
-      return;
-    alloc_init();
+    base_addr = dma_base_addr;
   }
 
   ~Device() {
-    alloc_base = NULL;
     delete prof_;
   }
 
@@ -614,7 +567,7 @@ class Device {
     auto remain = (total_insn % max_insn);
 
     void* virtual_addr = get_virtual(insn_phy_addr);
-    printf("Virtual addr: %p\n", virtual_addr);
+    // printf("Virtual addr: %p\n", virtual_addr);
     for (int i = 0; i < ites; ++i) {
       id_counter++;
       enqueueReq(id_counter, (uint64_t)virtual_addr+max_insn*sizeof(VTAGenericInsn)*i, max_insn * sizeof(VTAGenericInsn), (int)vta::CstStr::DMA_LOAD_INSN, READ_REQ);
@@ -958,9 +911,9 @@ class Device {
 };
 }  // namespace vta
 
-VTADeviceHandle AccVMVTADeviceAlloc() {
+VTADeviceHandle AccVMVTADeviceAlloc(uint64_t base_addr) {
   id_counter = 0;
-  return new vta::Device();
+  return new vta::Device(base_addr);
 }
 
 void AccVMVTADeviceFree(VTADeviceHandle handle) {

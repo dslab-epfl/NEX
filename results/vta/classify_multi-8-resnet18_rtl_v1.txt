@@ -1,0 +1,116 @@
+Tracker address 0.0.0.0:9091
+
+Server List
+------------------------------
+server-address           key
+------------------------------
+       127.0.0.1:9099    server:simbricks-pci
+       127.0.0.1:9093    server:simbricks-pci
+       127.0.0.1:9097    server:simbricks-pci
+       127.0.0.1:9095    server:simbricks-pci
+       127.0.0.1:9098    server:simbricks-pci
+       127.0.0.1:9094    server:simbricks-pci
+       127.0.0.1:9092    server:simbricks-pci
+       127.0.0.1:9096    server:simbricks-pci
+------------------------------
+
+Queue Status
+-------------------------------------
+key             total  free  pending
+-------------------------------------
+simbricks-pci   8      8     0      
+-------------------------------------
+
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7e3092e2a000, size 163840 bytes.
+LD_PRELOAD
+Using graphlib: /tmp/mxnet/graphlib-resnet18_v1-vta-1x16.so
+Setting bpf_sched to 0x1000
+connected 2
+Rep 0 starting inference
+Rep 0: Total inference duration 59_002_000 s
+Rep 1 starting inference
+Rep 1: Total inference duration 71_965_000 s
+done time is 131210000
+connected 1
+Rep 0 starting inference
+Rep 0: Total inference duration 47_796_000 s
+Rep 1 starting inference
+Rep 1: Total inference duration 46_813_000 s
+done time is 94863000
+connected 4
+Rep 0 starting inference
+Rep 0: Total inference duration 51_068_000 s
+Rep 1 starting inference
+Rep 1: Total inference duration 50_191_000 s
+done time is 101547000
+connected 7
+Rep 0 starting inference
+Rep 0: Total inference duration 63_360_000 s
+Rep 1 starting inference
+Rep 1: Total inference duration 70_200_000 s
+done time is 133875000
+connected 6
+Rep 0 starting inference
+Rep 0: Total inference duration 47_750_000 s
+Rep 1 starting inference
+Rep 1: Total inference duration 45_298_000 s
+done time is 93276000
+connected 5
+Rep 0 starting inference
+Rep 0: Total inference duration 47_971_000 s
+Rep 1 starting inference
+Rep 1: Total inference duration 46_615_000 s
+done time is 94742000
+connected 3
+Rep 0 starting inference
+Rep 0: Total inference duration 51_518_000 s
+Rep 1 starting inference
+Rep 1: Total inference duration 51_604_000 s
+done time is 103315000
+connected 0
+Rep 0 starting inference
+Rep 0: Total inference duration 56_243_000 s
+Rep 1 starting inference
+Rep 1: Total inference duration 72_899_000 s
+done time is 129325000
+0 out of 8 processes are ready
+1 out of 8 processes are ready
+2 out of 8 processes are ready
+3 out of 8 processes are ready
+5 out of 8 processes are ready
+All processes are ready
+Calling tick_nex
+start time is 92000
+end time is 134081000
+Time taken 133989000 ns
+Real latency 212.39885768003296 s
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7303eb6b2000, size 163840 bytes.
+LD_PRELOAD
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+/home/jiacma/anaconda3/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7d394bc69000, size 163840 bytes.
+LD_PRELOAD

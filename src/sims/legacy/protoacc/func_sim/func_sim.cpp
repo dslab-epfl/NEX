@@ -29,6 +29,8 @@ std::deque<token_class_bytes*> unit_tokens;
 
 static int COUNT = 0;
 
+static uint64_t dma_offset = 0;
+
 void clear_message_trace() {
     control_tokens.clear();
     fields_meta_tokens.clear();
@@ -187,6 +189,12 @@ void end_message(uint64_t ts_ps){
     parse_control_tokens(*message, 0); 
     parse_fields_and_units(*message);
 
+
+    // std::cout << control_tokens.size() << std::endl;
+    // std::cout << fields_meta_tokens.size() << std::endl;
+    // std::cout << unit_tokens.size() << std::endl;
+
+
     for (auto& _token : control_tokens){
       _token->ts = ts_ps;
       frontend_pmessage_tasks.tokens.push_back(_token);
@@ -248,29 +256,6 @@ void add_field(const std::string& field_name, const std::string& field_type, boo
 }
 
 
-FILE *fp_read, *fp_write;
-int open_pid_mem(pid_t pid){
-    char mem_path[64];
-    snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
-    int fd = open(mem_path, O_RDWR);
-    if (fd == -1) {
-        perror("open");
-        return -1;
-    }
-    fp_read = fopen("/tmp/mem_read_log.txt", "w");
-    fp_write = fopen("/tmp/mem_write_log.txt", "w");
-    return fd;
-}
-
-int close_pid_mem(int fd){
-    if (close(fd) == -1) {
-        perror("close");
-        return -1;
-    }
-    fclose(fp_read);
-    fclose(fp_write);
-    return 0;
-}
 
 ssize_t read_process_memory(int fd, uintptr_t address, void *buffer, size_t size, int tag) {
    //log out to a file 
@@ -278,7 +263,7 @@ ssize_t read_process_memory(int fd, uintptr_t address, void *buffer, size_t size
       enqueueReq(id_counter++, address, size, tag, 0);
     }
     // DEBUG_PRINT("zurvan read_process_memory %p %zu\n", (void*)address, size);
-    ssize_t nread = pread(fd, buffer, size, address);
+    ssize_t nread = pread(fd, buffer, size, address + dma_offset);
     // for(int i = 0; i < nread; i++) {
     //     DEBUG_PRINT("%02x", ((unsigned char*)buffer)[i]);
     // }
@@ -288,7 +273,7 @@ ssize_t read_process_memory(int fd, uintptr_t address, void *buffer, size_t size
 
 ssize_t write_process_memory(int fd, uintptr_t address, void *buffer, size_t size, int tag){
     enqueueReq(id_counter++, address, size, tag, 1);
-    ssize_t nwrite = pwrite(fd, buffer, size, address);
+    ssize_t nwrite = pwrite(fd, buffer, size, address + dma_offset);
     return nwrite;
 }
 
@@ -874,20 +859,16 @@ void parse_message_to_json(int mem_fd, uint64_t descriptor_table_addr, uint64_t 
 }
 
 extern "C"{
-    void protoacc_func_sim(int, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+    void protoacc_func_sim(int, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 }
 
-void protoacc_func_sim(int pid, uint64_t stringobj_output_addr, uint64_t string_ptr_output_addr, uint64_t descriptor_table_addr, uint64_t src_base_addr, uint64_t ts_ps){
+void protoacc_func_sim(int mem_fd, uint64_t mem_base, uint64_t stringobj_output_addr, uint64_t string_ptr_output_addr, uint64_t descriptor_table_addr, uint64_t src_base_addr, uint64_t ts_ps){
   
   backend_string_ptr_output_addr = string_ptr_output_addr;
   backend_stringobj_output_addr_tail = stringobj_output_addr;
   frontend_stringobj_output_addr_tail = stringobj_output_addr;
 
-  int mem_fd = open_pid_mem(pid);
-  if (mem_fd == -1) {
-      perror("open_pid_mem");
-      return;
-  }
+  dma_offset = mem_base;
 
 // Each ADT contains three regions. The 64B header region con-
 // tains layout information at the message-level, consisting of: (1) a
@@ -937,13 +918,18 @@ void protoacc_func_sim(int pid, uint64_t stringobj_output_addr, uint64_t string_
 //   /* is_submessage region (64 bits each): */
 //   2L,
 // };
+  
+  // printf(" ===== protoacc func sim descriptor_table_addr %lx, src_base_addr %lx\n", descriptor_table_addr, src_base_addr);
+
   new_message();
   parse_message_to_json(mem_fd, descriptor_table_addr, src_base_addr);
+
+  // printf(" ===== nonscalar_count %ld\n", nonscalar_count);
+
   end_message(ts_ps);
 
-  close(mem_fd);
-  // printf(" ===== nonscalar_count %ld\n", nonscalar_count);
-   
+  // printf("Setup_LPN Done\n");
+
   return;
   
 }

@@ -1,0 +1,96 @@
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x776299aa2000, size 163840 bytes.
+LD_PRELOAD
+Run 1:
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7ce2d2a83000, size 163840 bytes.
+LD_PRELOAD
+s1
+Initializing memory mapping
+protoacc driver shm_path: protoacc_nex_dma_0
+protoacc_nex_dma_0 sb.st_size: 536870912
+Memory mapped at address 0x7ce2b2800000, size 536870912 bytes.
+protoacc driver shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7ce2d2a5b000, size 163840 bytes.
+mem base at set up 7ce2b2800000
+s2
+s3
+PERF 0, ns new 4448000 (s 18000, e 4466000)
+PERF 1, ns new 3562000 (s 905000, e 4467000)
+s4
+29556762132 ns per iter. iterations: 1
+---------------------------------
+Run 2:
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x718dffa3e000, size 163840 bytes.
+LD_PRELOAD
+s1
+Initializing memory mapping
+protoacc driver shm_path: protoacc_nex_dma_0
+protoacc_nex_dma_0 sb.st_size: 536870912
+Memory mapped at address 0x718ddf746000, size 536870912 bytes.
+protoacc driver shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x718dffa16000, size 163840 bytes.
+mem base at set up 718ddf746000
+s2
+s3
+PERF 0, ns new 4445000 (s 4487000, e 8932000)
+PERF 1, ns new 3556000 (s 5377000, e 8933000)
+s4
+35202593524 ns per iter. iterations: 1
+---------------------------------
+Run 3:
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x76577fa33000, size 163840 bytes.
+LD_PRELOAD
+s1
+Initializing memory mapping
+protoacc driver shm_path: protoacc_nex_dma_0
+protoacc_nex_dma_0 sb.st_size: 536870912
+Memory mapped at address 0x76575f800000, size 536870912 bytes.
+protoacc driver shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x76575f7d8000, size 163840 bytes.
+mem base at set up 76575f800000
+s2
+s3
+PERF 0, ns new 4442000 (s 8951000, e 13393000)
+PERF 1, ns new 3551000 (s 9843000, e 13394000)
+s4
+30212879549 ns per iter. iterations: 1
+---------------------------------
+Run 4:
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x742cfbbd8000, size 163840 bytes.
+LD_PRELOAD
+s1
+Initializing memory mapping
+protoacc driver shm_path: protoacc_nex_dma_0
+protoacc_nex_dma_0 sb.st_size: 536870912
+Memory mapped at address 0x742cdbbd8000, size 536870912 bytes.
+protoacc driver shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x742cdbbb0000, size 163840 bytes.
+mem base at set up 742cdbbd8000
+s2
+s3
+PERF 0, ns new 4440000 (s 13413000, e 17853000)
+PERF 1, ns new 3547000 (s 14307000, e 17854000)
+s4
+37896705083 ns per iter. iterations: 1
+---------------------------------
+Starting NEX with CONFIG_EXTRA_COST_TIME 850init /nex_mmio_regions
+init protoacc_nex_dma_0
+PID 1825767 written to BPF map
+
+===
+Execution time (ms): 133005
+Error upper bound (us): 0
+===

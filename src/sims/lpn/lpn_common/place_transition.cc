@@ -249,3 +249,19 @@ void detect_conflicting_Transition_groups(Transition** t_list, int size, std::se
   }
 
 }
+
+
+uint64_t trigger_and_min_time_g(Transition** all_ts, int size){
+  uint64_t min = lpn::LARGE;
+  Transition* cur_t = NULL;
+  for(int i=0; i<size; i++){
+    cur_t = all_ts[i];
+    if (trigger(cur_t, 0)){
+      uint64_t _t = cur_t->delay_event;
+      if (min > _t){
+        min = _t;
+      }
+    }
+  }
+  return min;
+}

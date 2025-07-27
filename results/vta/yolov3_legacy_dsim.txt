@@ -1,0 +1,26 @@
+Rep 0: Running 1 inferences
+Rep 0: Requesting remote device 9_444_113 ns
+Rep 0: Sending and loading model 346_385_736 ns
+Rep 0: Warmup duration 51_903_000 ns
+Rep 0: Pure inference duration 111_943_000 ns
+Rep 0: Time taken 163846000 ns
+Rep 0: Real latency 6.885595316998661 s
+Rep 0: Warmup duration 52_459_000 ns
+Rep 0: Pure inference duration 113_009_000 ns
+Rep 0: Time taken 165468000 ns
+Rep 1: Warmup duration 51_471_000 ns
+Rep 1: Pure inference duration 111_954_000 ns
+Rep 1: Time taken 163425000 ns
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7b03ca2c4000, size 163840 bytes.
+LD_PRELOAD
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+/home/jiacma/anaconda3/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7f3187e8a000, size 163840 bytes.
+LD_PRELOAD

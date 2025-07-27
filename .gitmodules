@@ -5,3 +5,6 @@
 [submodule "external/scx"]
 	path = external/scx
 	url = https://github.com/sched-ext/scx.git
+[submodule "experiments/protoacc_exp/hyperprotobench"]
+	path = experiments/protoacc_exp/hyperprotobench
+	url = https://github.com/MJChku/hyperprotobench.git

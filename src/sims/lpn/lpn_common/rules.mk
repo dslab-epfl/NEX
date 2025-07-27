@@ -26,6 +26,8 @@ lib_lpnsim := $(d)liblpnsim.a
 
 OBJS := $(addprefix $(d),lpn_sim.o place_transition.o)
 
+$(OBJS): CPPFLAGS += -O3
+
 $(lib_lpnsim): $(OBJS)
 
 CLEAN := $(lib_lpnsim) $(OBJS)

@@ -1,0 +1,30 @@
+Using graphlib: /home/jiacma/mxnet/graphlib-resnet34_v1-vta-1x16.so
+Rep 0 sleeping for 0 s
+remote[0]:ext_dev(0) vta
+Rep 0: Starting inference
+Rep 0: Warmup duration 15_832_000 ns
+Rep 0: Pure inference duration 42_347_000 ns
+Rep 0: Time taken 58179000 ns
+Rep 0: Real latency 41.02017693396192 s
+Rep 0: Warmup duration 15_722_000 ns
+Rep 0: Pure inference duration 45_336_000 ns
+Rep 0: Time taken 61058000 ns
+Rep 1: Warmup duration 15_694_000 ns
+Rep 1: Pure inference duration 43_598_000 ns
+Rep 1: Time taken 59292000 ns
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7216c7417000, size 163840 bytes.
+LD_PRELOAD
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+
+=== clock nanosleep
+clock nanosleep the quantum scheduling is off 
+/home/jiacma/anaconda3/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7b7da01d8000, size 163840 bytes.
+LD_PRELOAD

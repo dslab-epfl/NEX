@@ -5,7 +5,7 @@
 #if CONFIG_PCIE_LPN
     #define PCIE_LATENCY 0    
 #else
-    #define PCIE_LATENCY 535    
+    #define PCIE_LATENCY CONFIG_VTA_LINK_DELAY    
 #endif
 
 namespace vta{

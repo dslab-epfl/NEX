@@ -40,8 +40,8 @@ if ROUND_BASED_MODE
         help
             Specifies the total number of cores used for host simulation.
 
-    config SIM_PHY_CORES
-        int "number of physical cores to simulate"
+    config SIM_VIRT_CORES
+        int "number of virtual cores to simulate"
         default 0
         help
             what system you are simulating? basically how many cores it has, note this number should be >= SIM_CORES.
@@ -137,6 +137,36 @@ menu "Host mem/pcie simulation"
         bool "mem"
         default y
 
+    if MEM_LPN
+        menu "Memory Cache Configuration"
+            config CACHE_HIT_LATENCY
+                int "Cache hit latency in nanoseconds"
+                default 20
+                help
+                    Set the cache hit latency in nanoseconds
+            config CACHE_MISS_FETCH_LATENCY
+                int "Cache miss fetch latency in nanoseconds"
+                default 62
+                help
+                    Set the cache miss fetch latency in nanoseconds
+            config CACHE_FIRST_HIT
+                bool "Access empty cacheline is hit or miss "
+                default n
+                help
+                    Set whether the first access to an empty cacheline is considered a hit or a miss.
+            config CACHE_SIZE
+                int "Cache size in KB"
+                default 30720
+                help
+                    Set the cache size in kilobytes
+            config CACHE_ASSOC
+                int "Cache associativity"
+                default 11
+                help
+                    Set the cache associativity
+        endmenu
+    endif
+
 endmenu
 
 choice
@@ -145,6 +175,11 @@ choice
         bool "dsim for VTA"
         help
             DSIM simulation for VTA
+
+    config LEGACY_VTA_DSIM
+        bool "legacy vta dsim"
+        help
+            Legacy DSIM simulation for VTA, tightly integrated, can only run 1 device
 
     config VTA_RTL
         bool "RTL for VTA"
@@ -174,7 +209,12 @@ choice
         bool "dsim for JPEG"
     help
         DSIM simulation for JPEG
-    
+
+    config LEGACY_JPEG_DSIM
+        bool "legacy jpeg dsim"
+    help
+        Legacy DSIM simulation for JPEG, tightly integrated, can only run 1 device
+
     config JPEG_RTL
         bool "rtl for JPEG"
 	help 
@@ -204,6 +244,12 @@ choice
         bool "dsim for protoacc"
     help    
         DSIM simulation for Protoacc
+    
+    config LEGACY_PROTOACC_DSIM
+        bool "legacy protoacc dsim"
+    help
+        Legacy DSIM simulation for Protoacc, tightly integrated, can only run 1 device
+
     config PROTOACC_RTL
         bool "rtl for protoacc"
 	help 
@@ -224,18 +270,6 @@ choice
     endmenu
 
 endchoice
-
-menu "Legacy Settings"
-        config LEGACY_JPEG_DSIM
-            bool "jpeg dsim"
-            default n
-        config LEGACY_VTA_DSIM
-            bool "vta dsim"
-            default n
-        config LEGACY_PROTOACC_DSIM
-            bool "protoacc dsim"
-            default n
-endmenu
 
 config ENABLE_CUDA
     bool "Enable CUDA support"

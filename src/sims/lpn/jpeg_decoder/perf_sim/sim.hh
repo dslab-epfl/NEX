@@ -32,7 +32,7 @@ void lpn_start(uint64_t buf, uint32_t len, uint64_t dst, uint64_t ps_ts){
     uint8_t* constrcuted_buf = (uint8_t*)malloc(1024*1024*50);
     // this runs func-sim to completion and returns the features
     uint8_t* retrived_buf = (uint8_t*)malloc(len+ZC_DMA_BLOCK_SIZE);
-    printf("size of img %ld\n", len, ZC_DMA_BLOCK_SIZE);
+    printf("size of img %d, DMA_BLOCK_SIZE %d\n", len, ZC_DMA_BLOCK_SIZE);
     for(uint32_t i = 0; i < len/ZC_DMA_BLOCK_SIZE + 1; i++){
         uint64_t address = img_addr + i*ZC_DMA_BLOCK_SIZE;
         auto dma_op = std::make_unique<JPEGDmaReadOp<ZC_DMA_BLOCK_SIZE>>(address, ZC_DMA_BLOCK_SIZE, 0);

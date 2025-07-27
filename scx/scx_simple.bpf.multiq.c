@@ -1,6 +1,8 @@
 #include <scx/common.bpf.h>
 
-#define DEBUG_PRINT2(...)
+
+// please set this manually, due to bpf static analysis
+#define MAX_CORES 48
 
 // #define DEBUG
 #ifdef DEBUG
@@ -32,7 +34,6 @@
 
 char _license[] SEC("license") = "GPL";
 
-#define MAX_CORES 48
 // target pid is the parent pid of the applications
 const volatile u32 target_pid;
 
@@ -60,8 +61,8 @@ static u64 eager_last_sync_vts = 0;
 const volatile u64 NR_CORES;
 const volatile u64 SIM_NR_CORES;
 
-const volatile u64 SIM_PHY_CORES = 0;
-// note SIM_NR_CORES must be <= SIM_PHY_CORES when SIM_PHY_CORES is not zero
+const volatile u64 SIM_VIRT_CORES = 0;
+// note SIM_NR_CORES must be <= SIM_VIRT_CORES when SIM_VIRT_CORES is not zero
 
 static u64 pin_core_cnt[MAX_CORES];
 
@@ -153,10 +154,8 @@ static u32 wait_nex_runtime = 0;
 // #define NR_CORES 24
 // #define SIM_NR_CORES 16
 
-// mask
-
 //interleaved core mapping
-#define HALF_CORE 24
+// #define HALF_CORE 24
 //Virtual  Core ID: 0, 1, 2, 3, 4, 5, 6, 7 .. 23, 24, 25, 26, ............. 47
 //Physical Core ID: 0, 2, 4, 6, 8, .......... 46,  1,  3,  5, ............. 47
 // this mapping only works for two sockets
@@ -350,41 +349,11 @@ struct {
 u64 cpu_q1_cnt[MAX_CORES] = {0};
 u64 cpu_q2_cnt[MAX_CORES] = {0};
 
-// can make it cpu local
-// struct cpu_sched_stats{
-    // each credit worth one epoch
-    // the cpu runs into the future if used_credict > total_credits
-    // and the timestamp for this cpu is (current_vts + used_credict - total_credits)
-    // the minimum units of credits is 1 
-    // we never allow using 8 cores to simulate 4 physical cores
-    // we allow using 4 cores to simulate 4 physical cores
-    // we allow using 1 core to simulate 4 cores as well
-    // work stealing of CPU is stealing credits basically
-    // CPU can't schedule, i.e., sets scx slice to 0, if the current stamp of the cpu goes into the future already. 
-    // u64 used_credits;
-    // u64 total_credits;
-    // bool next_epoch_allowed;
-// };
-
-// 20 ms seconds
 #define LARGEST_U64 0xFFFFFFFFFFFFFFFF
 #define MAX_PRIORITY 20000
 #define RESCHEDULE_PENALTY 10
 #define MIGRATE_THRESHOLD 10 // 1ms slack // threshold to migrate
 #define MAX_USED_CREDITS_TRACK 100000 // 100ms window size
-
-// match 250ms
-// 100 / 20000 -> 293ms
-// 10 / 1000 -> 308ms
-// 100 /1000 -> 312ms
-// 100 / 100000 -> 289
-// 10 / 100000 -> 285
-// 10 / 100000 -> 286
-// 10 / 100000 -> 280
-// 10 / 100000 -> 
-// 10 / 100000 -> 303
-// 10 / 100000 -> 269
-// 1000 / 100000 -> 282
 
 u32 cpu_sched_round_cnt[MAX_CORES] = {0};
 int cpu_sched_used_credits[MAX_CORES] = {0};
@@ -397,7 +366,6 @@ static inline bool cpu_sched_allowed(u32 cpu){
     }
     return true;
 }
-
 
 static inline void cpu_sched_stats_init(){
     for(int i=0; i<MAX_CORES; i++){
@@ -413,8 +381,8 @@ static u32 track_rounds = 0;
 static void cpu_sched_set_stats_for_all(){
     // make sure this integer division devides.
     u64 inc_credits = 1;
-    if(SIM_NR_CORES < SIM_PHY_CORES){
-        inc_credits = SIM_PHY_CORES/SIM_NR_CORES;
+    if(SIM_NR_CORES < SIM_VIRT_CORES){
+        inc_credits = SIM_VIRT_CORES/SIM_NR_CORES;
     }
     track_rounds += 1;
     // physical cpu number, not virtual cpu number
@@ -513,7 +481,7 @@ static inline void inc_vts(u64 time){
     if(vts_ptr){
         *vts_ptr += time;
         // DEBUG_PRINT("vts: %lu\n", *vts_ptr);
-        // bpf_printk("vts: %lu\n", *vts_ptr);
+        // DEBUG_PRINT("vts: %lu\n", *vts_ptr);
     }
 }
 
@@ -591,6 +559,7 @@ static inline int target_pid_from_userland(struct task_struct* p) {
     }
     return 1;
 }
+
 /*
     new_timer: start a new timer for a cpu;
     quantum is relative expiration time in nanoseconds from now;
@@ -606,7 +575,7 @@ static inline void new_timer(s32 cpu, u64 quantum, bool record){
     // if(true || record){
     //     ptr->start = bpf_ktime_get_ns();
     // }
-    if(on_off == 1 && SIM_PHY_CORES != 0 && quantum == 0 && record){
+    if(on_off == 1 && SIM_VIRT_CORES != 0 && quantum == 0 && record){
         scx_bpf_kick_cpu(cpu, SCX_KICK_PREEMPT);
         return;
     }
@@ -624,7 +593,6 @@ static inline u64 get_timer_start(s32 cpu){
 
 static int monitor_timerfn(void *map, int *key, struct bpf_timer *timer)
 {
-    // key is cpu number
     s32 cpu = (s32)(*key);
 
 // #define DEBUG_TIMER
@@ -640,7 +608,6 @@ static int monitor_timerfn(void *map, int *key, struct bpf_timer *timer)
                 // this is wrong, should be per-round error
                 ptr->err_late_end += elapsed - (DYN_TIME_QUANTUM_TO_USE + EXTRA_COST_TIME );
             }
-            // bpf_printk("(cpu@%d) Excessive timer run %lu\n", *key, (elapsed-(DYN_TIME_QUANTUM_TO_USE + EXTRA_COST_TIME + 2000))/1000);
         }
     }
 #endif
@@ -656,7 +623,7 @@ struct ctx {
     u64 *core_cnt;
 };
 
- // Callback function
+// Callback function
 static long callback(u32 index, void *ctx) {
 
         if(index < SIM_CORE_START){
@@ -688,7 +655,7 @@ static long callback(u32 index, void *ctx) {
                 min_cpu = pcpu;  // Update the smallest CPU
             }
             if(min_cpu < NR_CORES){
-                if(on_off == 1 && SIM_PHY_CORES != 0){
+                if(on_off == 1 && SIM_VIRT_CORES != 0){
                     int pcpu_busy_indicator = cpu_sched_used_credits[pcpu] + pin_core_cnt[pcpu]*MIGRATE_THRESHOLD;
                     int min_cpu_busy_indicator = cpu_sched_used_credits[min_cpu] + + pin_core_cnt[min_cpu]*MIGRATE_THRESHOLD;
                     if(min_cpu_busy_indicator > pcpu_busy_indicator + MIGRATE_THRESHOLD) 
@@ -705,7 +672,7 @@ static long callback(u32 index, void *ctx) {
             }
         }
         *min_cpu_ptr = min_cpu;
-        return 0; // Continue the loop
+        return 0;
 }
 
 
@@ -725,16 +692,14 @@ static u32 calc_cpu_balanced(struct task_struct *p, int old_cpu) {
     };
     bpf_loop(MAX_CORES, callback, &context, 0);
 
-    // // After loop, process the result
+    // After loop, process the result
     if (min_cpu>=0 && min_cpu < NR_CORES) {
         ATOMIC_PLUS_ONE(pin_core_cnt[min_cpu]);
         if (old_cpu >= 0 && old_cpu < NR_CORES) {
             ATOMIC_MINUS_ONE(pin_core_cnt[old_cpu]);
         }
-        // bpf_printk("Find Sim CPU for PID %d, now cpu@ %d (queue: %d)(old_cpu %d)\n", p->pid, min_cnt_cpu, pin_core_cnt[min_cnt_cpu], old_cpu);
     } else {
-        // No valid CPU found in the mask
-        // bpf_printk("No valid CPU found for PID %d\n", p->pid);
+        // DEBUG_PRINT("No valid CPU found for PID %d\n", p->pid);
     }
     return min_cpu;
 }
@@ -761,10 +726,10 @@ static inline void enqueue_sim_task(struct task_struct* p, u32 Q1_or_Q2, u64 qua
     if(on_off == 0){
         scx_bpf_dispatch(p, SHARED_DSQ+Q1_or_Q2-1, quantum, enq_flags);
     }else{
-        if(SIM_PHY_CORES == 0){
+        if(SIM_VIRT_CORES == 0){
             scx_bpf_dispatch(p, cpu*2+START_Q+Q1_or_Q2-1, quantum, enq_flags);
         }else{
-            // on == 1 and SIM_PHY_CORES is on as well
+            // on == 1 and SIM_VIRT_CORES is on as well
             // smaller priority number runs earlier
 
             u64 reversed_priority = 0;
@@ -831,10 +796,8 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
         u32 enq_q = 0;
         u32 consume_q_copy = consume_q;
 
-        // bpf_printk("Enqueue, Target PID %d run state %d \n", p->pid, run_state);
-       
         if(run_state == 0){
-            bpf_printk("!! Crap, enqueue status is 0; Target PID %d, prev_enq %d\n", p->pid, prev_q);
+            bpf_printk("WARN: enqueue status is 0; Target PID %d, prev_enq %d\n", p->pid, prev_q);
         }
 
         LOCK;
@@ -844,7 +807,7 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
             // because when the small slice scheduling is off, 
             // the following still allows the threads to run quickly.
             enq_q = consume_q_copy;
-            bpf_printk("Enqueue, Target PID %d, state %d, on_off %d\n", p->pid, run_state, on_off);
+            // DEBUG_PRINT("Enqueue, Target PID %d, state %d, on_off %d\n", p->pid, run_state, on_off);
             if(enq_q == Q1){
                 atomic_inc_total_and_qcnt(Q1_CNT_SHIFT);
             }else if(enq_q == Q2){
@@ -869,17 +832,16 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
         }
         UNLOCK;
 
-        
         // the task may not be able to run on the old cpu
         if(!bpf_cpumask_test_cpu(pin_cpu, p->cpus_ptr) 
-           || (on_off == 1 && SIM_PHY_CORES != 0 && MAX_PRIORITY == priority)
+           || (on_off == 1 && SIM_VIRT_CORES != 0 && MAX_PRIORITY == priority)
         ){
-            // bpf_printk("<enqueue>CPU %d is not in the cpumask of PID %d\n", p->pid, pin_cpu);
+            // DEBUG_PRINT("<enqueue>CPU %d is not in the cpumask of PID %d\n", p->pid, pin_cpu);
             u32 old_cpu = pin_cpu;
             pin_cpu = calc_cpu_balanced(p, pin_cpu);
             scx_bpf_kick_cpu(pin_cpu, SCX_KICK_IDLE);
             // if(old_cpu != pin_cpu){
-            //     bpf_printk("move from CPU %d to new CPU %d for PID %d\n", old_cpu, pin_cpu, p->pid);
+            //    DEBUG_PRINT("move from CPU %d to new CPU %d for PID %d\n", old_cpu, pin_cpu, p->pid);
             // }
         }
 
@@ -892,10 +854,10 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
 
         if(run_state != 2){
             if(enq_q == Q1){
-                DEBUG_PRINT2("Enqueue, target PID %d enter Q1, Quantum %d\n", p->pid, quantum);
+                DEBUG_PRINT("Enqueue, target PID %d enter Q1, Quantum %d\n", p->pid, quantum);
                 enqueue_sim_task(p, Q1, quantum, enq_flags, pin_cpu);
             }else if(enq_q == Q2){
-                DEBUG_PRINT2("Enqueue, target PID %d enter Q2, Quantum %d\n", p->pid, quantum);
+                DEBUG_PRINT("Enqueue, target PID %d enter Q2, Quantum %d\n", p->pid, quantum);
                 enqueue_sim_task(p, Q2, quantum, enq_flags, pin_cpu);
             }
         }else{
@@ -976,10 +938,10 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
             dec_vts(TIME_QUANTUM_TO_USE);
             if(normal_enqueue){
                 if(enq_q == Q1){
-                    DEBUG_PRINT2("Enqueue, target PID %d enter Q1, Quantum %d\n", p->pid, quantum);
+                    DEBUG_PRINT("Enqueue, target PID %d enter Q1, Quantum %d\n", p->pid, quantum);
                     enqueue_sim_task(p, Q1, quantum, enq_flags, pin_cpu);
                 }else if(enq_q == Q2){
-                    DEBUG_PRINT2("Enqueue, target PID %d enter Q2, Quantum %d\n", p->pid, quantum);
+                    DEBUG_PRINT("Enqueue, target PID %d enter Q2, Quantum %d\n", p->pid, quantum);
                     enqueue_sim_task(p, Q2, quantum, enq_flags, pin_cpu);
                 }
             }else{
@@ -999,15 +961,6 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
 
             DEBUG_PRINT("Enqueue, target PID %d from traced, consume_q %d\n", p->pid, enq_q);
         }
-
-        // struct per_thread_state* thread_state = bpf_map_lookup_elem(&thread_state_map, &index);
-        // u64 vts = read_vts();
-        // if(thread_state) {
-        //     if(vts < thread_state->halt_until) {
-        //         // quantum=0;
-        //         p->scx.slice = 0;
-        //     }
-        // }
 
         return;
     }
@@ -1049,15 +1002,15 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
 
                 if(enq_q == Q1){
                     atomic_inc_total_and_qcnt(Q1_CNT_SHIFT);
-                    DEBUG_PRINT2("Enqueue, target PID %d enter Q1, Quantum %d\n", p->pid, quantum);
+                    DEBUG_PRINT("Enqueue, target PID %d enter Q1, Quantum %d\n", p->pid, quantum);
                     enqueue_sim_task(p, Q1, quantum, enq_flags, pin_cpu);
                 }else if(enq_q == Q2){
                     atomic_inc_total_and_qcnt(Q2_CNT_SHIFT);
-                    DEBUG_PRINT2("Enqueue, target PID %d enter Q2, Quantum %d\n", p->pid, quantum);
+                    DEBUG_PRINT("Enqueue, target PID %d enter Q2, Quantum %d\n", p->pid, quantum);
                     enqueue_sim_task(p, Q2, quantum, enq_flags, pin_cpu);
                 }
                
-                bpf_printk("Ctrl msg pid %d, msg is %x, quantum %ld\n", p->pid, ctrl_msg, DYN_TIME_QUANTUM_TO_USE);
+                DEBUG_PRINT("Ctrl msg pid %d, msg is %x, quantum %ld\n", p->pid, ctrl_msg, DYN_TIME_QUANTUM_TO_USE);
 
                 if(state_ptr){
                     state_ptr->sim_state = sim_state;
@@ -1075,8 +1028,16 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
 
                 return;    
             }else{
-                // error 
-                bpf_printk("Error, jail break pid %d, but not 0x6000 ctrl msg, %x\n", p->pid, ctrl_msg);
+                sim_state = 0x00;
+                if(state_ptr){
+                    state_ptr->sim_state = sim_state;
+                }
+
+                if(ctrl_msg != 0){
+                    // TRACED State doesn't really mean it has a ctrl message, it's not precise here
+                    // So if ctrl_msg is 0, we won't error.
+                    bpf_printk("ERROR: jail break pid %d, but not 0x6000 or 0x8000 ctrl msg, %x\n", p->pid, ctrl_msg);
+                }
             }
         }
     }
@@ -1157,7 +1118,7 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
 
     if(on_off == 1 && sim_total_enabled != q1_total_enabled + q2_total_enabled){
         if(sim_total_enabled < q1_total_enabled + q2_total_enabled){
-            bpf_printk("!! Crap, total enabled %d < q1 %d + q2 %d\n", sim_total_enabled, q1_total_enabled, q2_total_enabled);
+            bpf_printk("WARN: total enabled %d < q1 %d + q2 %d\n", sim_total_enabled, q1_total_enabled, q2_total_enabled);
         }
         KICK_ME_AND_RETURN;
     }
@@ -1212,7 +1173,7 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
             }
         }
 
-        if(SIM_PHY_CORES != 0){
+        if(SIM_VIRT_CORES != 0){
             cpu_sched_set_stats_for_all();
         }
         if(on_off == 1 && EAGER_SYNC == 1){
@@ -1224,13 +1185,7 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
         bpf_spin_unlock(&epoch_lock);
         
         if(inc_time==1){
-            // uint64_t _vts = read_vts();
-            // if(consume_q == Q1){
-            //     bpf_printk("(vts@%lu)Switch to Q1, this enabled (%d, s %d), waitnexruntime %d; kernelsync %d; eager sync %d, on_off %d \n", _vts, sim_total_enabled, q1_total_enabled, wait_nex_runtime, nex_kernel_sync_counter, EAGER_SYNC, on_off);
-            // }else{
-            //     bpf_printk("(vts@%lu)Switch to Q2, this enabled (%d, s %d), waitnexruntime %d; kernelsync %d; eager sync %d, on_off %d \n", _vts, sim_total_enabled, q2_total_enabled, wait_nex_runtime, nex_kernel_sync_counter, EAGER_SYNC, on_off);
-            // }
-           
+    
             inc_vts(DYN_TIME_QUANTUM_TO_USE);
             DYN_TIME_QUANTUM_TO_USE = TIME_QUANTUM_TO_USE;
 
@@ -1238,7 +1193,7 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
                 uint64_t _vts = read_vts();
                 if(_vts >= eager_last_sync_vts+EAGER_SYNC_PERIOD){
                     eager_last_sync_vts = _vts;
-                    // bpf_printk("Pushing to nex_kernel_event_q, vts %ld, eager_last_sync_vts %ld, period %d; wait cnt %d\n", _vts, eager_last_sync_vts, EAGER_SYNC_PERIOD, wait_nex_runtime);
+                    // DEBUG_PRINT("Pushing to nex_kernel_event_q, vts %ld, eager_last_sync_vts %ld, period %d; wait cnt %d\n", _vts, eager_last_sync_vts, EAGER_SYNC_PERIOD, wait_nex_runtime);
                     struct custom_event evnt;
                     evnt.type = 0;
                     evnt.ts = _vts;
@@ -1251,12 +1206,6 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
                     bpf_spin_unlock(&epoch_lock);
                 }
             }
-
-            // if(next_round_cnt>=4 && next_round_cnt <=8 && TIME_QUANTUM_TO_USE < 10000){
-            //     DYN_TIME_QUANTUM_TO_USE = TIME_QUANTUM_TO_USE/2;
-            // }else{
-            //     DYN_TIME_QUANTUM_TO_USE = TIME_QUANTUM_TO_USE;
-            // }
         }
     }else{
 NO_SWITCH:
@@ -1280,7 +1229,7 @@ void BPF_STRUCT_OPS(simple_running, struct task_struct *p)
         }
         u32 enq_q = (sim_state & 0xFF00)>>8;
         if((sim_state & 0xFF) != 0){
-            bpf_printk("!! Crap, no enqueue; (%lu)(@cpu%d, %d, prev state %d) Target PID %d is running slice %d\n", bpf_ktime_get_ns()/1000, cpu, enq_q, sim_state & 0xFF, p->pid, p->scx.slice);
+            bpf_printk("WARN: no enqueue; (%lu)(@cpu%d, %d, prev state %d) Target PID %d is running slice %d\n", bpf_ktime_get_ns()/1000, cpu, enq_q, sim_state & 0xFF, p->pid, p->scx.slice);
         }else{
             DEBUG_PRINT("(%lu)(@cpu%d, %d, prev state %d) Target PID %d is running slice %d\n", bpf_ktime_get_ns()/1000, cpu, enq_q, sim_state, p->pid, p->scx.slice);
         }
@@ -1297,11 +1246,11 @@ void BPF_STRUCT_OPS(simple_running, struct task_struct *p)
                 goto NO_TIMER;
             }
             if(p->scx.slice > 200*(DYN_TIME_QUANTUM_TO_USE+EXTRA_COST_TIME)){
-                // bpf_printk("!! Crap, slice %d > quantum %d\n", p->scx.slice, DYN_TIME_QUANTUM_TO_USE+EXTRA_COST_TIME);
+                // bpf_printk("WARN: slice %d > quantum %d\n", p->scx.slice, DYN_TIME_QUANTUM_TO_USE+EXTRA_COST_TIME);
                 p->scx.slice = DYN_TIME_QUANTUM_TO_USE+EXTRA_COST_TIME;
             }
 
-            if(SIM_PHY_CORES != 0){
+            if(SIM_VIRT_CORES != 0){
                 u32 index = (u32)p->pid;
                 struct pstate* state_ptr = bpf_map_lookup_elem(&sim_proc_state, &index);
                 u64 reversed_priority = 0;
@@ -1309,7 +1258,7 @@ void BPF_STRUCT_OPS(simple_running, struct task_struct *p)
                     reversed_priority = state_ptr->reversed_priority;
                     if(cpu < MAX_CORES && cpu >= 0){
                         if((reversed_priority >> 32) > cpu_sched_round_cnt[cpu]){
-                            // bpf_printk("!! Crap, reversed_priority %ld > round_cnt %ld, likely because of migrate\n", reversed_priority >> 32, cpu_sched_round_cnt[cpu]);
+                            // bpf_printk("WARN: reversed_priority %ld > round_cnt %ld, likely because of migrate\n", reversed_priority >> 32, cpu_sched_round_cnt[cpu]);
                             state_ptr->reversed_priority = ((u64)cpu_sched_round_cnt[cpu] << 32) | MAX_PRIORITY;
                         }
                     }
@@ -1326,14 +1275,14 @@ void BPF_STRUCT_OPS(simple_running, struct task_struct *p)
                                 cpu_sched_round_cnt[cpu] += 1;
                                 reversed_priority = ((u64)cpu_sched_round_cnt[cpu] << 32) | MAX_PRIORITY;
                                 cpu_sched_stats_dec_total(cpu, RESCHEDULE_PENALTY-1);
-                                // bpf_printk("CPU %d run %d (priority %ld)\n", cpu, p->pid, reversed_priority & 0xFFFFFFFF);
+                                // DEBUG_PRINT("CPU %d run %d (priority %ld)\n", cpu, p->pid, reversed_priority & 0xFFFFFFFF);
                             }else{
                                 // higher priority
                                 reversed_priority -= 1;
                             }
                             state_ptr->reversed_priority = reversed_priority;
                             // if((reversed_priority & 0xFFF)==0){
-                            //     bpf_printk("CPU %d run %d (priority %ld)\n", cpu, p->pid, reversed_priority & 0xFFFFFFFF);
+                            //     DEBUG_PRINT("CPU %d run %d (priority %ld)\n", cpu, p->pid, reversed_priority & 0xFFFFFFFF);
                             // }
                         }
                     }
@@ -1355,8 +1304,6 @@ NO_TIMER:
 
 void BPF_STRUCT_OPS(simple_stopping, struct task_struct *p, bool runnable)
 {
-    // u64 q_end = bpf_ktime_get_ns();
-    // u64 q_elapsed = q_end - get_timer_start(p->thread_info.cpu);
 
     int is_target_pid = target_pid_from_userland(p);
     u32 index = (u32)p->pid;
@@ -1369,34 +1316,8 @@ void BPF_STRUCT_OPS(simple_stopping, struct task_struct *p, bool runnable)
         }
         u32 enq_q = (sim_state & 0xFF00)>>8;
         u32 run_state = sim_state & 0xFF;
-        // u32 prev_state = run_state;
-
-        // u32 my_round = (sim_state & 0xFFFF0000)>>16;        
-        // DEBUG_PRINT("<Stopping 1>PID %d @(%lu, prev enq %d, round %lu)Counters (consume_q %d) in the end total %d (q1 %d, q2 %d) \n", p->pid, read_vts(), enq_q, my_round, consume_q, sim_total_enabled, q1_total_enabled, q2_total_enabled);
-        // DEBUG_PRINT("<Stopping 2>(%lu)Target PID %d is stopping state (prev state %d, round %d, slice %d): R %d state %d U %d I %d S %d T %d D %d\n", bpf_ktime_get_ns()/1000, p->pid, sim_state & 0x00FF, (sim_state & 0xFFFF0000)>>16, p->scx.slice, runnable, p->__state, p->__state & TASK_UNINTERRUPTIBLE, p->__state & TASK_INTERRUPTIBLE, p->__state & TASK_STOPPED, p->__state & TASK_TRACED, p->__state & TASK_DEAD);
-
+        
         if( run_state > 0 && run_state < 3 ){
-            // if(run_state == 2 && !(p->__state & TASK_TRACED)){
-            //     bpf_printk("!! Crap, stopping state is 2, but task is not traced anymore\n");
-            //     // only count the first time
-            //     atomic_dec_cnt(TRACED_CNT_SHIFT);
-            // }
-            // if(p->__state & TASK_TRACED && run_state != 2){
-            //     bpf_printk("!! Crap, stopping state is 1/23, but task is traced\n");
-            //     uint64_t vts = read_vts();
-            //     DEBUG_PRINT("(@%lu)Target PID %d is stopping state (prev state %d, round %d, slice %d): R %d state %d U %d I %d S %d T %d D %d\n", vts, p->pid, sim_state & 0x00FF, (sim_state & 0xFFFF0000)>>16, p->scx.slice, runnable, p->__state, p->__state & TASK_UNINTERRUPTIBLE, p->__state & TASK_INTERRUPTIBLE, p->__state & TASK_STOPPED, p->__state & TASK_TRACED, p->__state & TASK_DEAD);
-            //     sim_state = (sim_state & 0xFFFFFF00) | 0x02;
-            //     atomic_inc_cnt(TRACED_CNT_SHIFT);
-            //     if(on_off == 0){
-            //         // after which no threads moves, unless the traced thread returns
-            //         kick_all_cpu(SCX_KICK_PREEMPT);
-            //     }
-            //     if(state_ptr){
-            //         state_ptr->sim_state = sim_state;
-            //     }
-            // }
-            // stopped and traced return directly
-            // DEBUG_PRINT("<Stopping 3>(%lu)Target PID %d is stopping state (prev state %d, round %d, slice %d): R %d state %d U %d I %d S %d T %d D %d\n", bpf_ktime_get_ns()/1000, p->pid, sim_state & 0x00FF, (sim_state & 0xFFFF0000)>>16, p->scx.slice, runnable, p->__state, p->__state & TASK_UNINTERRUPTIBLE, p->__state & TASK_INTERRUPTIBLE, p->__state & TASK_STOPPED, p->__state & TASK_TRACED, p->__state & TASK_DEAD);
             return;
         }
 
@@ -1416,7 +1337,7 @@ void BPF_STRUCT_OPS(simple_stopping, struct task_struct *p, bool runnable)
                     sim_state = (sim_state & 0xFFFFFF00) | 0x01;
 
                     // put to lowest priority.
-                    if(SIM_PHY_CORES != 0 && state_ptr){
+                    if(SIM_VIRT_CORES != 0 && state_ptr){
                         u32 cpu = p->thread_info.cpu;
                         if(cpu < MAX_CORES && cpu >= 0){
                             state_ptr->reversed_priority = ((u64)(cpu_sched_round_cnt[cpu]) << 32) | MAX_PRIORITY;
@@ -1448,7 +1369,7 @@ void BPF_STRUCT_OPS(simple_stopping, struct task_struct *p, bool runnable)
                 sim_state = (sim_state & 0xFFFFFF00) | 0x01;
 
                 // put to lowest priority.
-                if(SIM_PHY_CORES != 0 && state_ptr){
+                if(SIM_VIRT_CORES != 0 && state_ptr){
                     u32 cpu = p->thread_info.cpu;
                     if(cpu < MAX_CORES && cpu >= 0){
                         state_ptr->reversed_priority = ((u64)(cpu_sched_round_cnt[cpu]) << 32) | MAX_PRIORITY;
@@ -1478,7 +1399,7 @@ void BPF_STRUCT_OPS(simple_stopping, struct task_struct *p, bool runnable)
             state_ptr->sim_state = sim_state;
         }   
         
-        DEBUG_PRINT("<Stopping 5>(%lu)Target PID %d is stopping state (prev state %d, state_now %d, slice %d): R %d state %d U %d I %d S %d T %d D %d\n", bpf_ktime_get_ns()/1000, p->pid, prev_state, sim_state & 0x00FF, p->scx.slice, runnable, p->__state, p->__state & TASK_UNINTERRUPTIBLE, p->__state & TASK_INTERRUPTIBLE, p->__state & TASK_STOPPED, p->__state & TASK_TRACED, p->__state & TASK_DEAD);
+        DEBUG_PRINT("<Stopping>(%lu)Target PID %d is stopping state (prev state %d, state_now %d, slice %d): R %d state %d U %d I %d S %d T %d D %d\n", bpf_ktime_get_ns()/1000, p->pid, prev_state, sim_state & 0x00FF, p->scx.slice, runnable, p->__state, p->__state & TASK_UNINTERRUPTIBLE, p->__state & TASK_INTERRUPTIBLE, p->__state & TASK_STOPPED, p->__state & TASK_TRACED, p->__state & TASK_DEAD);
         return;
     }
 
@@ -1515,7 +1436,7 @@ void BPF_STRUCT_OPS(simple_enable, struct task_struct *p)
     u32 index = (u32)p->pid;
     if(is_target_pid == 1){
         u32 cpu = calc_cpu_balanced(p, -1); 
-        bpf_printk("%d ENABLE @init_cpu %d\n", p->pid, cpu);
+        DEBUG_PRINT("%d ENABLE @init_cpu %d\n", p->pid, cpu);
         #define INIT 255
         // u64 sim_state = INIT;
         struct pstate state;
@@ -1533,7 +1454,7 @@ void BPF_STRUCT_OPS(simple_disable, struct task_struct *p)
     bool is_target_pid = target_pid_from_userland(p);
     u32 index = (u32)p->pid;
     if(is_target_pid == 1){
-        bpf_printk("%d DISABLE\n", p->pid);
+        DEBUG_PRINT("%d DISABLE\n", p->pid);
         struct pstate* state_ptr = bpf_map_lookup_elem(&sim_proc_state, &index);
         u64 sim_state = 0;
         u32 pin_cpu = 0;
@@ -1547,7 +1468,7 @@ void BPF_STRUCT_OPS(simple_disable, struct task_struct *p)
 
         u32 enq_q = (sim_state & 0xFF00)>>8;
         if((sim_state & 0xFF) == 0){
-            bpf_printk("!! Crap, disabled (%lu)(%d, prev state %d) Target PID %d is running slice %d\n", bpf_ktime_get_ns()/1000, enq_q, sim_state & 0xFF, p->pid, p->scx.slice);
+            bpf_printk("WARN: disabled (%lu)(%d, prev state %d) Target PID %d is running slice %d\n", bpf_ktime_get_ns()/1000, enq_q, sim_state & 0xFF, p->pid, p->scx.slice);
         }
         bpf_map_delete_elem(&sim_proc_state, &index);
     }
@@ -1601,7 +1522,7 @@ s32 BPF_STRUCT_OPS_SLEEPABLE(simple_init)
 
     // for custom scheduling
 
-    if(SIM_PHY_CORES != 0){
+    if(SIM_VIRT_CORES != 0){
         cpu_sched_stats_init();
     }
     return ret;
@@ -1609,7 +1530,7 @@ s32 BPF_STRUCT_OPS_SLEEPABLE(simple_init)
 
 void BPF_STRUCT_OPS(simple_exit, struct scx_exit_info *ei)
 {
-    bpf_printk("stats : average over diff %lu, average less diff %lu, rounds %lu\n", total_over_diff/round64, total_less_diff/round64, round64);
+    bpf_printk("(not used) stats at exit: average over diff %lu, average less diff %lu, rounds %lu\n", total_over_diff/round64, total_less_diff/round64, round64);
     UEI_RECORD(uei, ei);
 }
 
@@ -1624,11 +1545,6 @@ SCX_OPS_DEFINE(simple_ops,
            .disable         = (void *)simple_disable,
            .init            = (void *)simple_init,
            .exit            = (void *)simple_exit,
-        //    .flags     = SCX_OPS_ENQ_LAST | SCX_OPS_SWITCH_PARTIAL | SCX_OPS_ENQ_EXITING,
-        //    .set_cpumask     = (void *)simple_set_cpumask,
-        //    .quiescent       = (void *)simple_quiescent,
-        //    .dequeue         = (void *)simple_dequeue,
-        //    .yield            = (void *)simple_yield,
            .flags     = SCX_OPS_ENQ_LAST,
            .name            = "simple");
 

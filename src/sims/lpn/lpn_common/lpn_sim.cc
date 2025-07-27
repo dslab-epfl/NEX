@@ -22,8 +22,9 @@ uint64_t NextCommitTimeFast(Transition* t_list[], int size){
 uint64_t NextCommitTime(Transition* t_list[], int size){
 
     // to get update data
-    LOOP_TS(trigger(t, 0), size);
-    return min_time_g(t_list, size);
+    return trigger_and_min_time_g(t_list, size);
+    // LOOP_TS(trigger(t, 0), size);
+    // return min_time_g(t_list, size);
 }
 
 int CommitAtTime(Transition* t_list[], int size, uint64_t time){
@@ -42,7 +43,7 @@ void UpdateClk(Transition* t_list[], int size, uint64_t clk){
   for(int i=0; i<size; i++){
       Transition* t = t_list[i];
       t->time = clk;
-      // trigger(t, 1);
+      // trigger(t, 0);
   }
 }
 

@@ -43,7 +43,8 @@ static uint8_t *m_output_g;
 static uint8_t *m_output_b;
 
 #define dprintf
-#define dprintf_blk(_name, _arr, _max) for (int __i=0;__i<_max;__i++) { dprintf("%s: %d -> %d\n", _name, __i, _arr[__i]); }
+// #define dprintf_blk(_name, _arr, _max) for (int __i=0;__i<_max;__i++) { dprintf("%s: %d -> %d\n", _name, __i, _arr[__i]); }
+#define dprintf_blk(_name, _arr, _max) 
 
 static std::vector<int> mcu_cnt;
 
@@ -539,7 +540,7 @@ void jpeg_lpn_driver(uint8_t* buf, uint32_t len, uint8_t* dst, uint64_t* decoded
         for (size_t y = 0; y < m_height; ++y) {
             for (size_t x = 0; x < m_width; ++x) {
                 size_t base = y * m_width+x;
-                uint16_t rgb565 = ((m_output_r[base] >> 3) & MASK5) << 11 | ((m_output_g[base] >> 2)& MASK6) << 5 | (m_output_b[base] >> 3) & MASK5;
+                uint16_t rgb565 = ((m_output_r[base] >> 3) & MASK5) << 11 | ((m_output_g[base] >> 2)& MASK6) << 5 | ((m_output_b[base] >> 3) & MASK5);
                 buffer[base] = rgb565;
             }
         }

@@ -6,6 +6,10 @@
 #include <exec/bpf.h>
 #include <signal.h>
 #include <sys/mman.h>
+#include <inttypes.h>
+#include <dlfcn.h>
+#include <fcntl.h>
+#include <execinfo.h>
 
 // #define EXEC_DEBUG 
 // turn off debug print, otherwise it can deadlock
@@ -24,7 +28,6 @@ int sim_end = 0;
 uint64_t sys_up_time;
 int syscall_entry_time_map_fd;
 int trace_evnt_fd; 
-int log_file_fd;
 int from_nex_runtime_event_q_fd;
 int to_nex_runtime_event_q_fd;
 int sim_proc_state_fd;
@@ -111,15 +114,99 @@ uint64_t get_time(){
     return ts.tv_sec * 1000000000 + ts.tv_nsec;
 }
 
+static const int MAX_FRAMES = 100;
+static void
+crash_handler(int sig, siginfo_t *si, void *unused)
+{
+    safe_printf("Caught signal %d (%s) at address %p",
+        sig, strsignal(sig), si->si_addr);
+    void *frames[MAX_FRAMES];
+    int  frame_count;
+    int  log_fd;
+
+    /* Open fresh crash log */
+    // change file name to be pid crash_trace.log
+    char log_filename[256];
+    snprintf(log_filename, sizeof(log_filename), "crash_trace_%d.log", getpid());
+    log_fd = open(log_filename,
+                  O_CREAT|O_WRONLY|O_TRUNC, 0644);
+    if (log_fd < 0) log_fd = STDERR_FILENO;
+
+    /* Signal info */
+    dprintf(log_fd,
+            "ERROR: signal %d (%s) at address %p\n",
+            sig, strsignal(sig), si->si_addr);
+
+    /* Backtrace */
+    frame_count = backtrace(frames, MAX_FRAMES);
+    backtrace_symbols_fd(frames, frame_count, log_fd);
+
+    unsetenv("LD_PRELOAD");
+    /* For each frame, resolve via addr2line (full path) and write only that */
+   for (int i = 0; i < frame_count; ++i) {
+        Dl_info info;
+        dladdr(frames[i], &info);
+        const char *obj = info.dli_fname ?: "/proc/self/exe";
+        uintptr_t base = (uintptr_t)info.dli_fbase;
+        uintptr_t addr = (uintptr_t)frames[i];
+        uintptr_t offset = addr - base;
+
+        char cmd[512];
+        snprintf(cmd, sizeof(cmd),
+            "/usr/bin/addr2line -f -p -e %s 0x%" PRIxPTR,
+            obj, offset);
+
+        FILE *fp = popen(cmd, "r");
+        if (fp) {
+            char buf[512];
+            while (fgets(buf, sizeof(buf), fp)) {
+                dprintf(log_fd, "    src: %s", buf);
+            }
+            pclose(fp);
+        }
+    }
+    if (log_fd != STDERR_FILENO) close(log_fd);
+    _exit(1);
+}
+
+static void
+install_crash_handler(void)
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = crash_handler;
+    sa.sa_flags     = SA_SIGINFO | SA_RESTART;
+    sigemptyset(&sa.sa_mask);
+
+    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGILL,  &sa, NULL);
+    sigaction(SIGFPE,  &sa, NULL);
+}
+
 int main(int argc, char *argv[]) {
+    // autotuning phrase
     nex_pid = getpid();
+
+    #if CONFIG_ENABLE_BPF
+    if (CONFIG_EXTRA_COST_TIME == 0){
+        printf("Run \"make autoconfig\" first to configure CONFIG_EXTRA_COST_TIME\n");
+        exit(0);
+    }
+    #endif
+
+
     uint64_t start_ts, end_ts;
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <program> [args...]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    init(0);   
+    printf("Starting NEX with CONFIG_EXTRA_COST_TIME %d", CONFIG_EXTRA_COST_TIME);
+
+    init(0);  
+
+    install_crash_handler();
 
     pid_t dp = fork();
     pid_t tracee=-1;
@@ -261,14 +348,12 @@ int main(int argc, char *argv[]) {
         assert(ret != -1);
         if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
             #if CONFIG_ENABLE_BPF
-            extern int attach_bpf(int pid);
-            attach_bpf(dp);
+            attach_bpf(dp, -1, -1);
             eager_sync_stop = 0;
             from_nex_runtime_event_q_fd = get_bpf_map("from_nex_runtime_event_q");
             to_nex_runtime_event_q_fd = get_bpf_map("to_nex_runtime_event_q");
             sim_proc_state_fd = get_bpf_map("sim_proc_state");
             #endif
-            log_file_fd = open("log.txt", O_CREAT|O_RDWR|O_TRUNC, 0666);
             start_ts = get_time();
             ptrace(PTRACE_CONT, tracee, 0, 0);
         }else{
@@ -276,12 +361,6 @@ int main(int argc, char *argv[]) {
             assert(0);
         }
 
-        // pthread_t thread_id;
-        // used for eager sync, event tracing, etc. disabled
-        // if (pthread_create(&thread_id, NULL, poll_trace_eventq, NULL) != 0) {
-        //     perror("Failed to create thread");
-        //     return 1;
-        // }
     #ifdef CONFIG_EAGER_SYNC
         if(CONFIG_EAGER_SYNC){
             if (pthread_create(&eager_sync_thread_id, NULL, eager_sync_accelerator_manager, NULL) != 0) {
@@ -405,22 +484,9 @@ END:
     hw_deinit();
 
     #if CONFIG_ENABLE_BPF
-    extern int destroy_bpf();
     destroy_bpf();
     #endif
 
-    close(log_file_fd);
-    
-    pid_t setup_child = fork();
-    if(setup_child == 0){
-        char command[100];
-        sprintf(command, "rm /tmp/*sock*");
-        char *args[] = {"/bin/sh", "-c", command, NULL};
-        execvp(args[0], args);
-        perror("execvp failed");
-    }
-    
-    waitpid(setup_child, NULL, 0);
     DEBUG_PRINT("===== Tracer stopped ===== \n");
     return 0;
 }
@@ -441,4 +507,13 @@ int put_bpf_map(int map_fd, void* key, void* value, int ops){
 uint64_t read_err_bound(){
     return 0;
 }
+
+int attach_bpf(int pid, int extra_cost, int on_off){
+    return 0;
+}
+
+int destroy_bpf(){
+    return 0;
+}
+
 #endif

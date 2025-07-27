@@ -27,7 +27,7 @@ $(bin_workload_driver): $(workload_driver_objs)
 
 CLEAN := $(bin_jpeg_bm) $(bin_workload_driver) $(jpeg_bm_objs) \
 	$(workload_driver_objs)
-ALL := $(bin_jpeg_bm)
+DSIM_ALL += $(bin_jpeg_bm)
 
 
 include mk/subdir_post.mk

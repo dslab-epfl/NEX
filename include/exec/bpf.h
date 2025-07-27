@@ -31,7 +31,6 @@ struct custom_event{
 };
 
 extern int trace_evnt_fd; // removed 
-extern int log_file_fd;
 
 extern int from_nex_runtime_event_q_fd;
 extern int to_nex_runtime_event_q_fd;
@@ -40,3 +39,5 @@ extern int sim_proc_state_fd;
 extern uint64_t read_vts();
 extern int get_bpf_map(char* map_name);
 extern int put_bpf_map(int map_fd, void* key, void* value, int ops);
+extern int attach_bpf(int pid, int extra_cost, int on_off);
+extern int destroy_bpf();

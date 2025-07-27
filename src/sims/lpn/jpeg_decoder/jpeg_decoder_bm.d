@@ -12,7 +12,7 @@ src/sims/lpn/jpeg_decoder/jpeg_decoder_bm.o: \
  src/sims/lpn/lpn_common/place_transition.hh \
  src/sims/lpn/jpeg_decoder/include/driver.hh \
  src/sims/lpn/jpeg_decoder/perf_sim/token_types.hh \
- src/sims/lpn/jpeg_decoder/perf_sim/sim.hh \
+ include/config/config.h src/sims/lpn/jpeg_decoder/perf_sim/sim.hh \
  src/sims/lpn/jpeg_decoder/perf_sim/lpn_funcs.hh \
  src/sims/lpn/jpeg_decoder/perf_sim/places.hh \
  src/sims/lpn/jpeg_decoder/perf_sim/transitions.hh \
@@ -34,6 +34,7 @@ src/sims/lpn/lpn_common/lpn_sim.hh:
 src/sims/lpn/lpn_common/place_transition.hh:
 src/sims/lpn/jpeg_decoder/include/driver.hh:
 src/sims/lpn/jpeg_decoder/perf_sim/token_types.hh:
+include/config/config.h:
 src/sims/lpn/jpeg_decoder/perf_sim/sim.hh:
 src/sims/lpn/jpeg_decoder/perf_sim/lpn_funcs.hh:
 src/sims/lpn/jpeg_decoder/perf_sim/places.hh:

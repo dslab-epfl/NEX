@@ -88,7 +88,7 @@ def main():
             inference_dur = time.time_ns() - inference_start
         
             e2e_dur = time.time_ns() - warmup_start
-            print(f"Rep {i}: Total inference duration {e2e_dur:_} ns")
+            print(f"Rep {i}: Total inference duration {e2e_dur:_} s")
     
         print("done time is", time.time_ns())
         remote._sess.get_function("CloseRPCConnection")()
@@ -131,8 +131,8 @@ def main():
     time_end = time.time_ns()
     real_end = time.clock_gettime(cid)
     print("end time is", time_end)
-    print(f"Time taken: {time_end - time_start}")
-    print(f"Real time taken: {real_end - real_start}")
+    print(f"Time taken {time_end - time_start} ns")
+    print(f"Real latency {real_end - real_start} s")
 
     for p in p_array:
         p.join()

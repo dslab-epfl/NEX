@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <stdatomic.h>
 
  
 // #define DEBUG_PRINTS(...) safe_printf(__VA_ARGS__)
@@ -30,17 +31,53 @@
 
 // #define YIELD sched_yield()
 #define YIELD
+#define WAIT_ON_COND
 
 static SimbricksPciState *simbricks_all = NULL;
 
 static int num_simbricks = 0;
 
 static volatile uint64_t global_cur_ts = 0;
+//atomic protect this variable
 
 static pthread_mutex_t global_time_lock = PTHREAD_MUTEX_INITIALIZER;
 
+// General atomic wrappers for 64-bit variables
+static inline uint64_t atomic_read_relaxed(volatile uint64_t* ptr) {
+    return atomic_load_explicit((_Atomic uint64_t*)ptr, memory_order_relaxed);
+}
+
+static inline void atomic_store_release(volatile uint64_t* ptr, uint64_t value) {
+    atomic_store_explicit((_Atomic uint64_t*)ptr, value, memory_order_release);
+}
+
+static inline uint64_t atomic_fetch_add_acq_rel(volatile uint64_t* ptr, uint64_t value) {
+    return atomic_fetch_add_explicit((_Atomic uint64_t*)ptr, value, memory_order_acq_rel);
+}
+
+// General atomic wrappers for 32-bit variables
+static inline uint32_t atomic_read_relaxed_32(volatile uint32_t* ptr) {
+    return atomic_load_explicit((_Atomic uint32_t*)ptr, memory_order_relaxed);
+}
+
+static inline void atomic_store_release_32(volatile uint32_t* ptr, uint32_t value) {
+    atomic_store_explicit((_Atomic uint32_t*)ptr, value, memory_order_release);
+}
+
+static inline uint64_t atomic_read_global_ts(void) {
+    return atomic_read_relaxed(&global_cur_ts);
+}
+
+static inline void atomic_store_global_ts(uint64_t value) {
+    atomic_store_release(&global_cur_ts, value);
+}
+
+static inline uint64_t atomic_fetch_add_global_ts(uint64_t value) {
+    return atomic_fetch_add_acq_rel(&global_cur_ts, value);
+}
+
 uint64_t qemu_clock_get_ps(SimbricksPciState* simbricks) {
-    return simbricks->cur_ts;
+    return atomic_read_relaxed(&simbricks->cur_ts);
 }
 
 void qemu_thread_create(QemuThread *thread, const char *name, 
@@ -67,24 +104,37 @@ void qemu_cond_broadcast(QemuCond *cond) {
 static void simbricks_comm_h2d_force_update(SimbricksPciState *simbricks, int64_t ts);
 
 static void advance_wait_until_(SimbricksPciState* simbricks, uint64_t ts) {
-    pthread_mutex_lock(&simbricks->advance_lock);
-    simbricks->advance_till_ts = ts;
+    atomic_store_release(&simbricks->advance_till_ts, ts);
     // DEBUG_PRINTS("advance_wait_until_ start: cur %lu, next %lu\n", simbricks->cur_ts ,simbricks->advance_till_ts);
+
+#ifdef WAIT_ON_COND
+    pthread_mutex_lock(&simbricks->advance_lock);
     pthread_cond_broadcast(&simbricks->advance_cond);
     pthread_cond_wait(&simbricks->advance_cond, &simbricks->advance_lock);
     pthread_mutex_unlock(&simbricks->advance_lock);
-    // DEBUG_PRINTS("advance_wait_until_ end: cur %lu, next %lu\n", simbricks->cur_ts ,simbricks->advance_till_ts);
+#else
+    while(1){
+        if(atomic_read_relaxed_32(&simbricks->blocked) == 1){
+            break;
+        }
+        sched_yield();
+    }
+#endif
+
 }
 
 static void broadcast_all(uint64_t ts){
     SimbricksPciState* cur_simbricks = simbricks_all;
     while(cur_simbricks != NULL){
-        pthread_mutex_lock(&cur_simbricks->advance_lock);
-        cur_simbricks->advance_till_ts = ts;
+        atomic_store_release(&cur_simbricks->advance_till_ts, ts);
         // if(simbricks->cur_ts > simbricks->advance_till_ts):
         //  this thread is still blocked
+    #ifdef WAIT_ON_COND
+        pthread_mutex_lock(&cur_simbricks->advance_lock);
         pthread_cond_broadcast(&cur_simbricks->advance_cond);
         pthread_mutex_unlock(&cur_simbricks->advance_lock);
+    #endif
+
         cur_simbricks = cur_simbricks->next_simbricks;
     }
 }
@@ -93,12 +143,13 @@ static void waitfor_all(){
     SimbricksPciState* cur_simbricks = simbricks_all;
     while(cur_simbricks != NULL){
         while(1){
-            pthread_mutex_lock(&cur_simbricks->advance_lock);
-            if(cur_simbricks->blocked == 1){
-                pthread_mutex_unlock(&cur_simbricks->advance_lock);
+            // pthread_mutex_lock(&cur_simbricks->advance_lock);
+            if(
+                atomic_read_relaxed_32(&cur_simbricks->blocked) == 1){
+                // pthread_mutex_unlock(&cur_simbricks->advance_lock);
                 break;
             }
-            pthread_mutex_unlock(&cur_simbricks->advance_lock);
+            // pthread_mutex_unlock(&cur_simbricks->advance_lock);
             YIELD;
         }
         cur_simbricks = cur_simbricks->next_simbricks;
@@ -117,7 +168,7 @@ static void advance_memory_simulator(uint64_t ts){
 
 static void advance_wait_until_all(uint64_t ts) {
     SimbricksPciState* cur_simbricks;
-    if(global_cur_ts > ts){
+    if(atomic_read_global_ts() > ts){
         return;
     }
     // ts is the future timestamp we want to advance to;
@@ -130,14 +181,14 @@ static void advance_wait_until_all(uint64_t ts) {
     // if(simbricks->cur_ts > ts): the thread is still blocked
     // skip that thread
 
-#define ADANCE_PERIOD 20*1000
+#define ADVANCE_PERIOD 20*1000
     
     while(1){
 
         pthread_mutex_lock(&global_time_lock);
-        global_cur_ts += ADANCE_PERIOD;
-        if(global_cur_ts > ts){
-            global_cur_ts = ts;
+        atomic_fetch_add_global_ts(ADVANCE_PERIOD);
+        if(atomic_read_global_ts() > ts){
+            atomic_store_global_ts(ts);
         }
         pthread_mutex_unlock(&global_time_lock);
 
@@ -145,25 +196,21 @@ static void advance_wait_until_all(uint64_t ts) {
 
         // indeed simulations are running in parallel
         while(cur_simbricks != NULL){
-            // safe_printf("advance_wait_until_all step 1: simbricks:%p ,cur %ld, global %ld\n", cur_simbricks, cur_simbricks->cur_ts, global_cur_ts);
-            // pthread_mutex_lock(&cur_simbricks->advance_lock);
-            while(cur_simbricks->blocked == 0 && global_cur_ts >= cur_simbricks->cur_ts){
-                // pthread_mutex_unlock(&cur_simbricks->advance_lock);
+            // safe_printf("advance_wait_until_all step 1: simbricks:%p ,cur %ld, global %ld\n", cur_simbricks, atomic_read_relaxed(&cur_simbricks->cur_ts), atomic_read_global_ts());
+            while(
+                atomic_read_relaxed_32(&cur_simbricks->blocked) == 0 && 
+                atomic_read_global_ts() >= atomic_read_relaxed(&cur_simbricks->cur_ts)){
                 YIELD;
-                // pthread_mutex_lock(&cur_simbricks->advance_lock);
             }
-            // pthread_mutex_unlock(&cur_simbricks->advance_lock);
             cur_simbricks = cur_simbricks->next_simbricks;
-
         }
 
-        // safe_printf("advance_wait_until_all step 3: simbricks:%p ,cur %ld, global %ld\n", simbricks_all, simbricks_all->cur_ts, global_cur_ts);
-
+        // safe_printf("advance_wait_until_all step 3: simbricks:%p ,cur %ld, global %ld\n", simbricks_all, simbricks_all->cur_ts, atomic_read_global_ts());
         // advance mem simulator
 #ifdef ENABLE_MEMORY
-        advance_memory_simulator(global_cur_ts);
+        advance_memory_simulator(atomic_read_global_ts());
 #endif
-        if(global_cur_ts >= ts){
+        if(atomic_read_global_ts() >= ts){
             // at this point, all simbricks are at least at ts
             // all simbricks polls will stop
             break;
@@ -180,7 +227,7 @@ static void advance_wait_until_all(uint64_t ts) {
 void pci_dma_read(SimbricksPciState* simbricks, uint64_t addr, void *buffer, size_t len) {
     // Simulated DMA read
     // // DEBUG_PRINTS("Simulated DMA read from addr: %p, size %ld \n", (void*)addr, len);
-    ssize_t nread = pread(simbricks->pid_fd, buffer, len, simbricks->read_addr_base + addr);
+    ssize_t nread = pread(simbricks->dma_fd, buffer, len, simbricks->read_addr_base + addr);
     // for(int i = 0; i < nread; i++) {
     //     DEBUG_PRINTS("%02x", ((unsigned char*)buffer)[i]);
     // }
@@ -191,7 +238,7 @@ void pci_dma_write(SimbricksPciState* simbricks, uint64_t addr, const void *buff
     // Simulated DMA write
     DEBUG_PRINTS("Simulated DMA write to addr: %lu, size %d\n", addr, len);
     // For correct results, perform this write to the actual memory
-    // pwrite(simbricks->pid_fd, buffer, len, simbricks->write_addr_base + addr);
+    // pwrite(simbricks->dma_fd, buffer, len, simbricks->write_addr_base + addr);
 }
  
 #define SIMBRICKS_CLOCK QEMU_CLOCK_VIRTUAL
@@ -267,7 +314,7 @@ static void simbricks_comm_d2h_dma_read(
     void* mem_ptr = malloc(read->len);
 
 #ifdef ENABLE_MEMORY
-    mem_put(simbricks->dev_id, ts, read->req_id, simbricks->read_addr_base + read->offset, read->len, (uint64_t)mem_ptr, simbricks->pid_fd, 0, (uint64_t)simbricks);
+    mem_put(simbricks->dev_id, ts, read->req_id, simbricks->read_addr_base + read->offset, read->len, (uint64_t)mem_ptr, simbricks->dma_fd, 0, (uint64_t)simbricks);
 #else
     pci_dma_read(simbricks, read->offset, mem_ptr, read->len);
     simbricks_comm_d2h_dma_read_complete(simbricks, ts, read->req_id, (uint64_t)mem_ptr, read->len);
@@ -295,7 +342,7 @@ static void simbricks_comm_d2h_dma_write(
     DEBUG_PRINTS("simbricks_comm_d2h_dma_write: ts=%ld req_id=%lu offset=%lu len=%u\n",
        ts, write->req_id, write->offset, write->len);
 #ifdef ENABLE_MEMORY
-    mem_put(simbricks->dev_id, ts, write->req_id, simbricks->write_addr_base + write->offset, write->len, (uint64_t)write->data, simbricks->pid_fd, 1, (uint64_t)simbricks);
+    mem_put(simbricks->dev_id, ts, write->req_id, simbricks->write_addr_base + write->offset, write->len, (uint64_t)write->data, simbricks->dma_fd, 1, (uint64_t)simbricks);
 #else
     simbricks_comm_d2h_dma_write_complete(simbricks, ts, write->req_id); 
 #endif
@@ -310,7 +357,7 @@ static void simbricks_comm_d2h_interrupt(SimbricksPciState *simbricks,
         DEBUG_PRINTS("simbricks_comm_d2h_interrupt: int_num=%d int_type=%d\n", int_num, int_type);
         simbricks->active = 0; 
         // fastforward to advance_till_ts 
-        simbricks_comm_h2d_force_update(simbricks, simbricks->advance_till_ts);
+        simbricks_comm_h2d_force_update(simbricks, atomic_read_relaxed(&simbricks->advance_till_ts));
         return;
     }
     DEBUG_PRINTS("unknown and unregsitered interrupt type %d, num %d\n", int_type, int_num);
@@ -429,18 +476,18 @@ static void *simbricks_poll_thread(void *opaque)
             }
             
         }
-        while(poll(simbricks, simbricks->cur_ts, &next_ts));
+        while(poll(simbricks, atomic_read_relaxed(&simbricks->cur_ts), &next_ts));
 
         // START - send out all messages at current proto_ts
         // advance mem simulator
 
 #ifdef ENABLE_MEMORY
         if(num_simbricks == 1){
-            advance_memory_simulator(simbricks->cur_ts);
+            advance_memory_simulator(atomic_read_relaxed(&simbricks->cur_ts));
         }
 
         while(mem_get(simbricks->dev_id, &ref_ptr, &req_id, &buffer_addr, &buffer_len, &mem_token_ts)){
-            DEBUG_PRINTS("mem_get: %p; mem_time %ld, now %ld\n", simbricks, mem_token_ts, proto_ts);
+            // DEBUG_PRINTS("mem_get: %p; mem_time %ld, now %ld\n", simbricks, mem_token_ts, simbricks->cur_ts);
             // note mem_get deques the resp already.
             assert((void*)ref_ptr == (void*)simbricks);
             if(buffer_addr == 0){
@@ -454,43 +501,49 @@ static void *simbricks_poll_thread(void *opaque)
         
 #endif
 
-        if(simbricks->cur_ts - simbricks->pcieif.base.out_timestamp >= simbricks->sync_period*1000){
-            volatile union SimbricksProtoPcieH2D *msg = simbricks_comm_h2d_alloc(simbricks, simbricks->cur_ts);
+        if(atomic_read_relaxed(&simbricks->cur_ts) - simbricks->pcieif.base.out_timestamp >= simbricks->sync_period*1000){
+            volatile union SimbricksProtoPcieH2D *msg = simbricks_comm_h2d_alloc(simbricks, atomic_read_relaxed(&simbricks->cur_ts));
             SimbricksPcieIfH2DOutSend(&simbricks->pcieif, msg, SIMBRICKS_PROTO_MSG_TYPE_SYNC);
         }
 
         // END - send out all messages at current proto_ts
 
-        if( next_ts <= simbricks->cur_ts){
+        if( next_ts <= atomic_read_relaxed(&simbricks->cur_ts)){
             // DEBUG_PRINTS("simbricks_poll_thread: next_ts %lu < cur %lu; last sync: %lu\n", next_ts, proto_ts, simbricks->pcieif.base.out_timestamp);
             // there is no message, just sleep a whie and continue
-            // usleep(10);
         }
 
-        if(next_ts > simbricks->cur_ts){
-            pthread_mutex_lock(&simbricks->advance_lock);
-            simbricks->cur_ts = next_ts+1000;
-            // simbricks->cur_ts = next_ts;
-            while(simbricks->cur_ts > simbricks->advance_till_ts){
-                simbricks->blocked = 1;
+        if(next_ts > atomic_read_relaxed(&simbricks->cur_ts)){
+            atomic_store_release(&simbricks->cur_ts, next_ts+1000);
+            while(
+                atomic_read_relaxed(&simbricks->cur_ts) > 
+                atomic_read_relaxed(&simbricks->advance_till_ts)){
+
+                atomic_store_release_32(&simbricks->blocked, 1);
+
                 // wake up whoever is trying to advance me;
+            #ifdef WAIT_ON_COND
+                pthread_mutex_lock(&simbricks->advance_lock);
                 pthread_cond_broadcast(&simbricks->advance_cond);
                 // waits for someone to advance me
                 // DEBUG_PRINTS("simbricks_poll_thread: waiting for advance %lu, cur %lu\n", next_ts, simbricks->advance_till_ts);
                 pthread_cond_wait(&simbricks->advance_cond, &simbricks->advance_lock);
+                pthread_mutex_unlock(&simbricks->advance_lock);
+            #else 
+                sched_yield();
+            #endif 
             }
-            simbricks->blocked = 0;
-            pthread_mutex_unlock(&simbricks->advance_lock);
+            atomic_store_release_32(&simbricks->blocked, 0);
 
             // I will move on to simbricks->cur_ts
             // MUST: simbricsk->cur_ts <= simbricks->advance_till_ts
-            // MUST: eventually global_cur_ts >= simbricks->advance_till_ts
-            // IMPLY: global_cur_ts >= simbricks->cur_ts
+            // MUST: eventually atomic_read_global_ts() >= simbricks->advance_till_ts
+            // IMPLY: atomic_read_global_ts() >= simbricks->cur_ts
             // so the following while loop will not be infinite
             // pthread_mutex_lock(&global_time_lock);
-            while(global_cur_ts < simbricks->cur_ts){
+            while(atomic_read_global_ts() < atomic_read_relaxed(&simbricks->cur_ts)){
                 // pthread_mutex_unlock(&global_time_lock);
-                // global_cur_ts is behind me
+                // atomic_read_global_ts() is behind me
                 YIELD;
                 // pthread_mutex_lock(&global_time_lock);
             }
@@ -578,7 +631,7 @@ static void simbricks_mmio_rw(SimbricksPciState *simbricks,
 
         // release polling thread to process the message
         while(req->processing){
-            uint64_t next_ts_try = global_cur_ts+simbricks->sync_period*1000;
+            uint64_t next_ts_try = atomic_read_global_ts()+simbricks->sync_period*1000;
             simbricks_advance_rtl(simbricks, next_ts_try/1000, false);
         }
 
@@ -744,22 +797,21 @@ static void simbricks_comm_h2d_force_update(SimbricksPciState *simbricks, int64_
         SIMBRICKS_PROTO_PCIE_H2D_MSG_FORCESYNC_TIME);
 }
 
-void simbricks_advance_rtl_single(SimbricksPciState *simbricks, uint64_t ts_ns, int force)
+static void inline simbricks_advance_rtl_single(SimbricksPciState *simbricks, uint64_t ts_ns, int force)
 {   
     uint64_t proto_ts = ts_ns*1000;
     
     if(force){
         DEBUG_PRINTS("force update to ps : %lu\n", proto_ts);
         simbricks_comm_h2d_force_update(simbricks, proto_ts);
-
     }
 
     // assert(proto_ts > simbricks->advance_till_ts);
-    if(proto_ts < simbricks->cur_ts){
-        proto_ts = simbricks->cur_ts;
-        safe_printf("warning: simbricks_advance_rtl: %lu, last time %lu\n", proto_ts/1000, simbricks->cur_ts/1000);
+    if(proto_ts < atomic_read_relaxed(&simbricks->cur_ts)){
+        proto_ts = atomic_read_relaxed(&simbricks->cur_ts);
+        DEBUG_PRINTS("warning: simbricks_advance_rtl: %lu, last time %lu\n", proto_ts/1000, atomic_read_relaxed(&simbricks->cur_ts)/1000);
     }
-    global_cur_ts = proto_ts;
+    atomic_store_global_ts(proto_ts);
     advance_wait_until_(simbricks, proto_ts);
 }
 
@@ -779,7 +831,7 @@ void simbricks_advance_rtl(SimbricksPciState *simbricks, uint64_t ts_ns, int for
     }
 
     // all are inactive
-    if(global_cur_ts == 0){
+    if(atomic_read_global_ts() == 0){
         // fast forward all simbricks to the same time
         // SimbricksPciState* cur_simbricks = simbricks_all;
         // while(cur_simbricks != NULL){
@@ -787,7 +839,7 @@ void simbricks_advance_rtl(SimbricksPciState *simbricks, uint64_t ts_ns, int for
         //     simbricks_comm_h2d_force_update(cur_simbricks, proto_ts);
         //     cur_simbricks = cur_simbricks->next_simbricks;
         // }
-        global_cur_ts = proto_ts;
+        atomic_store_global_ts(proto_ts);
         safe_printf("fast forward all simbricks to %lu\n", proto_ts/1000);
     }
 
@@ -807,9 +859,9 @@ void simbricks_advance_rtl(SimbricksPciState *simbricks, uint64_t ts_ns, int for
         simbricks_comm_h2d_force_update(simbricks, proto_ts);
     }
 
-    if(proto_ts < simbricks->cur_ts){
-        proto_ts = simbricks->cur_ts;
-        safe_printf("warning: simbricks_advance_rtl: %lu, last time %lu; forcing update global time stamp\n", proto_ts/1000, simbricks->cur_ts/1000);
+    if(proto_ts < atomic_read_relaxed(&simbricks->cur_ts)){
+        proto_ts = atomic_read_relaxed(&simbricks->cur_ts);
+        DEBUG_PRINTS("warning: simbricks_advance_rtl: %lu, last time %lu; forcing update global time stamp\n", proto_ts/1000, atomic_read_relaxed(&simbricks->cur_ts)/1000);
         // return;
     }
 

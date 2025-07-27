@@ -6,7 +6,7 @@
 // this is not necessary to implement for every accelerators
 extern "C" {
     void vta_lpn_init();
-    void vta_sim_start( uint64_t, uint32_t, uint32_t, uint64_t);
+    void vta_sim_start( uint64_t, uint64_t, uint32_t, uint32_t, uint64_t);
     int vta_perf_sim_finished();
     void vta_advance_until_time(uint64_t ts);
 }

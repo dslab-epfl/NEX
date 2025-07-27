@@ -12,3 +12,4 @@ cffi
 matplotlib
 mxnet
 tornado
+seaborn

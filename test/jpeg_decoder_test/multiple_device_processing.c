@@ -8,6 +8,7 @@
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <config/config.h>
 
 #define JPEG_SIZE 221184170
 
@@ -282,13 +283,13 @@ int decode_images_multithreaded(const char **input_paths, void **output_buffers,
 
 #define TEST_MAIN
 #ifdef TEST_MAIN
-int main() {
+int main(int argc, char *argv[]) {
     int num_images = 36;
     int img_idx_list[36] = {1,13,14,15,16,20,21,22,23,24,25,26,27,29,32,33,34,36,37,39,40,41,42,43,44,45,46,47,48,49,5,51,52,6,8,9};
     const char *images[36];
     for (int i = 0; i < num_images; i++) {
         char path[200];
-        sprintf(path, "./test/data/%d.jpg", img_idx_list[i]);
+        sprintf(path, CONFIG_PROJECT_PATH "/test/data/%d.jpg", img_idx_list[i]);
         images[i] = strdup(path);
     }
    
@@ -298,6 +299,14 @@ int main() {
     }
     
     int num_threads = 1;
+    if (argc > 1) {
+        num_threads = atoi(argv[1]);
+        if (num_threads < 1) {
+            printf("Invalid number of threads, using default: 1\n");
+            num_threads = 1;
+        }
+    }
+    printf("Using %d threads\n", num_threads);
 
     // Initialize the JPEG decoder driver.
     mmio_base = initialize_jpeg_decoder();
@@ -319,8 +328,8 @@ int main() {
     deinit_jpeg_decoder();
 
     printf("end time %lu\n", end);
-    printf("Total time: %lu us\n", end - start);
-    printf("Real time: %f\n", toc - tic);
+    printf("Time taken %lu us\n", (end - start));
+    printf("Real latency %f\n", toc - tic);
 
     // Cleanup output buffers.
     for (int i = 0; i < num_images; i++) {

@@ -42,7 +42,7 @@ void pcie_advance_mem(uint64_t ts){
         }
     }
 
-    // mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr
+    // mem_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr
     while(!dma_read_requests.empty()){
         token_class_abirrs* token = dma_read_requests.front();
         dma_read_requests.pop_front();
@@ -147,7 +147,7 @@ int pcie_active(uint64_t* next_active_ts){
 // here it's simplified to check if all transitions are finished
 // this is wrong if there are multiple accelerators connected
 // put a memory request
-int pcie_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int pid_fd, int type, uint64_t ref_ptr){
+int pcie_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, uint64_t mem_buffer_ptr, int dma_fd, int type, uint64_t ref_ptr){
     // printf("pcie_put\n");
     // create a new token
     
@@ -155,7 +155,7 @@ int pcie_put(uint64_t virtual_ts, uint64_t req_id, uint64_t addr, uint64_t len, 
     dataref->req_id = req_id;
     dataref->addr = addr;
     dataref->mem_buffer_ptr = mem_buffer_ptr;
-    dataref->pid_fd = pid_fd;
+    dataref->dma_fd = dma_fd;
     dataref->type = type;
     dataref->ref_ptr = ref_ptr;
     dataref->subreq_cnt = 0;

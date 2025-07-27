@@ -105,7 +105,8 @@ int pop_traced_child(int *ret_pid){
         return 1; \
     } \
 
-int attach_bpf(int pid){
+int attach_bpf(int pid, int extra_cost, int on_off){
+
 	
 	libbpf_set_print(libbpf_print_fn);
 	signal(SIGINT, sigint_handler);
@@ -120,13 +121,22 @@ int attach_bpf(int pid){
 	#if CONFIG_ROUND_BASED_MODE
 	// 2us 850ns
 	// 1us 750ns
-	skel->rodata->EXTRA_COST_TIME = CONFIG_EXTRA_COST_TIME;
+	if(extra_cost == -1){
+		skel->rodata->EXTRA_COST_TIME = CONFIG_EXTRA_COST_TIME;
+	}else{
+		skel->rodata->EXTRA_COST_TIME = (uint32_t)extra_cost;
+	}
+	
 	skel->rodata->TIME_QUANTUM = CONFIG_ROUND_SLICE;
 	skel->rodata->NR_CORES = CONFIG_TOTAL_CORES;
 	skel->rodata->SIM_NR_CORES = CONFIG_SIM_CORES;
-	skel->rodata->DEFAULT_ON_OFF = CONFIG_DEFAULT_ON_OFF;
-#if CONFIG_SIM_PHY_CORES > 0
-	skel->rodata->SIM_PHY_CORES = CONFIG_SIM_PHY_CORES;
+	if (on_off == -1){
+		skel->rodata->DEFAULT_ON_OFF = CONFIG_DEFAULT_ON_OFF;
+	}else{
+		skel->rodata->DEFAULT_ON_OFF = on_off;
+	}
+#if CONFIG_SIM_VIRT_CORES > 0
+	skel->rodata->SIM_VIRT_CORES = CONFIG_SIM_VIRT_CORES;
 #endif
 	#if CONFIG_EAGER_SYNC
 	skel->rodata->EAGER_SYNC = CONFIG_EAGER_SYNC;
@@ -160,6 +170,7 @@ int attach_bpf(int pid){
 
 int destroy_bpf()
 {
+
 #if CONFIG_EAGER_SYNC
 	UNPIN_BPF_MAP_PATH(from_nex_runtime_event_q, "/sys/fs/bpf/from_nex_runtime_event_q");
 	UNPIN_BPF_MAP_PATH(to_nex_runtime_event_q, "/sys/fs/bpf/to_nex_runtime_event_q");
@@ -173,11 +184,11 @@ int destroy_bpf()
 	UNPIN_BPF_MAP_PATH(bpf_sched_ctrl, "/sys/fs/bpf/bpf_sched_ctrl");
 	UNPIN_BPF_MAP_PATH(trace_event_q, "/sys/fs/bpf/trace_event_q");
 	UNPIN_BPF_MAP_PATH(sim_proc_state, "/sys/fs/bpf/sim_proc_state");
-	
+
 	bpf_link__destroy(elink);
 	UEI_REPORT(skel, uei);
 	scx_simple__destroy(skel);
-
+	
 	return 0;
 }
 

@@ -104,11 +104,10 @@ int main() {
   double tic = get_real_time(); // Real time
   // clock_t t1 = clock();
   int img_idx = 0;
-  int img_idx_list[36] = {1,13,14,15,16,20,21,22,23,24,25,26,27,29,32,33,34,36,37,39,40,41,42,43,44,45,46,47,48,49,5,51,52,6,8,9};
+  int total = 42;
+  int img_idx_list[total] = {0,1,10,13,14,15,16,2,20,21,22,23,24,25,26,27,29,3,32,33,34,36,37,39,4,40,41,42,43,44,45,46,47,48,49,5,51,52,6,7,8,9};
   while(1){
     sprintf(path, "./test/data/%d.jpg", img_idx_list[img_idx]);
-    // sprintf(path, "./test/data/%s.jpg", "small");
-    // sprintf(path, "./test/data/small.jpg");
     uint64_t start = get_microseconds(); // Virtual time
     // "Decode" the image using the JPEG decoder driver
     load_image(image_data, &image_size, path);
@@ -119,16 +118,16 @@ int main() {
       custom_sleep_us(100);
     }
     uint64_t end = get_microseconds();
-    printf("CPU time: %lu us\n", end - start);
+    printf("Time taken %lu us\n", end - start);
     img_idx++;
-    if(img_idx >= 10){
+    if(img_idx >= total){
       break;
     }
   }
   // clock_t t2 = clock();
 
   double toc = get_real_time();
-  printf("Real time: %f\n", toc - tic);
+  printf("Real latency %f\n", toc - tic);
   // dump_decoded(dst, "./test/data/dump.ppm");
   // free(dst);
   // printf("Clock time: %f\n", (t2 - t1) / (double)CLOCKS_PER_SEC);

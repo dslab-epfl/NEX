@@ -4,6 +4,15 @@
 #include "place_transition.hh"
 #include "places.hh"
 #include "lpn_funcs.hh"
+#include <config/config.h>
+
+#if CONFIG_PCIE_LPN
+    #define PCIE_LATENCY 0    
+#else
+    #define PCIE_LATENCY CONFIG_PROTOACC_LINK_DELAY  
+#endif
+
+
 std::vector<Place<token_class_iasbrr>*> list_0 = {&dma_read_port_req_put_0, &dma_read_port_req_put_1, &dma_read_port_req_put_2, &dma_read_port_req_put_3, &dma_read_port_req_put_4, &dma_read_port_req_put_5, &dma_read_port_req_put_6, &dma_read_port_req_put_7};
 std::vector<Place<token_class_iasbrr>*> list_1 = {&dma_write_port_req_put_0};
 Transition t1 = {
@@ -1471,7 +1480,7 @@ Transition dma_read_port_mem_get = {
 };
 Transition dma_read_port_recv_from_mem = {
     .id = "dma_read_port_recv_from_mem",
-    .delay_f = delay_latency_if_resp_ready(0, 4),
+    .delay_f = delay_latency_if_resp_ready(0, PCIE_LATENCY),
     .p_input = {},
     .p_output = {&dma_read_port_recv_buf},  
     .pi_w = {},
@@ -1482,7 +1491,7 @@ Transition dma_read_port_recv_from_mem = {
 };
 Transition dma_read_port_mem_put = {
     .id = "dma_read_port_mem_put",
-    .delay_f = con_delay_ns(4),
+    .delay_f = con_delay_ns(PCIE_LATENCY),
     .p_input = {&dma_read_port_mem_put_buf,&dma_read_port_send_cap},
     .p_output = {&dma_read_port_SINK},  
     .pi_w = {take_1_token(),take_1_token()},
@@ -1515,7 +1524,7 @@ Transition dma_write_port_mem_get = {
 };
 Transition dma_write_port_recv_from_mem = {
     .id = "dma_write_port_recv_from_mem",
-    .delay_f = delay_latency_if_resp_ready(1, 4),
+    .delay_f = delay_latency_if_resp_ready(1, PCIE_LATENCY),
     .p_input = {},
     .p_output = {&dma_write_port_recv_buf},  
     .pi_w = {},
@@ -1526,7 +1535,7 @@ Transition dma_write_port_recv_from_mem = {
 };
 Transition dma_write_port_mem_put = {
     .id = "dma_write_port_mem_put",
-    .delay_f = con_delay_ns(4),
+    .delay_f = con_delay_ns(PCIE_LATENCY),
     .p_input = {&dma_write_port_mem_put_buf,&dma_write_port_send_cap},
     .p_output = {&dma_write_port_SINK},  
     .pi_w = {take_1_token(),take_1_token()},

@@ -71,7 +71,7 @@ typedef struct SimbricksMemState {
     struct SimbricksProtoMemMemIntro mem_intro; 
 
     // added for nex
-    int pid_fd;
+    int dma_fd;
     int pid;
     uint64_t dma_base_addr;
     uint64_t read_addr_base; 
@@ -113,15 +113,15 @@ typedef struct SimbricksPciState {
 
     // added for zurvan
     int dev_id;
-    int pid_fd;
+    int dma_fd;
     int pid;
     int open_fd_pid;
     uint64_t dma_base_addr;
     uint64_t read_addr_base; 
     uint64_t write_addr_base;
-    uint64_t cur_ts;
-    uint64_t advance_till_ts;
-    int blocked;
+    volatile uint64_t cur_ts;
+    volatile uint64_t advance_till_ts;
+    volatile uint32_t blocked;
     int active;
     int issued_task_cnt;
     struct SimbricksPciState *next_simbricks;

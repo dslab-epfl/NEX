@@ -12,7 +12,7 @@ src/sims/lpn/vta/vta_bm.o: src/sims/lpn/vta/vta_bm.cc \
  src/sims/lpn/vta/include/driver.hh \
  src/sims/lpn/vta/perf_sim/token_types.hh \
  src/sims/lpn/vta/perf_sim/sim.hh src/sims/lpn/vta/perf_sim/lpn_funcs.hh \
- src/sims/lpn/vta/perf_sim/places.hh \
+ src/sims/lpn/vta/perf_sim/places.hh include/config/config.h \
  src/sims/lpn/vta/perf_sim/transitions.hh \
  src/sims/lpn/vta/perf_sim/lpn_init.hh \
  src/sims/lpn/vta/include/vta/driver.h
@@ -36,6 +36,7 @@ src/sims/lpn/vta/perf_sim/token_types.hh:
 src/sims/lpn/vta/perf_sim/sim.hh:
 src/sims/lpn/vta/perf_sim/lpn_funcs.hh:
 src/sims/lpn/vta/perf_sim/places.hh:
+include/config/config.h:
 src/sims/lpn/vta/perf_sim/transitions.hh:
 src/sims/lpn/vta/perf_sim/lpn_init.hh:
 src/sims/lpn/vta/include/vta/driver.h:

@@ -203,7 +203,7 @@ void VTABm::DmaComplete(std::unique_ptr<pciebm::DMAOp> dma_op) {
     
 
     Registers_.ctrl = 0x2;
-    // MsiXIssue(0);
+    MsiXIssue(0);
     // TransitionCountLog(t_list, T_SIZE);
     return ;
   }
@@ -356,7 +356,7 @@ void VTABm::ExecuteEvent(std::unique_ptr<pciebm::TimedEvent> evt) {
       lpn_clear();
       ClearReqQueues(ids);
       Registers_.ctrl = 0x2;
-      //MsiXIssue(0);
+      MsiXIssue(0);
       // TransitionCountLog(t_list, T_SIZE);
       return;
   }

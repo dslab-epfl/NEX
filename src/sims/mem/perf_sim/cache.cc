@@ -3,6 +3,7 @@
 #include <list>
 #include <cstdint>
 #include "cache.hh"
+#include <config/config.h>
 
 Cache::Cache(uint64_t cache_size_in_bytes, int associativity, int block_size_in_bytes,
              int latency_hit, int latency_miss, bool first_access_is_hit)
