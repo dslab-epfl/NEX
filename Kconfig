@@ -1,4 +1,4 @@
-mainmenu "Zurvan Configuration"
+mainmenu "NEX Configuration"
 
 config PROJECT_PATH
     string "Project Path"
@@ -270,18 +270,3 @@ choice
     endmenu
 
 endchoice
-
-config ENABLE_CUDA
-    bool "Enable CUDA support"
-help
-    Interpose library for CUDA
-
-if ENABLE_CUDA
-    menu "GPU configuration"
-    config CUDA_GPU_ADDRESS
-        string "gpu server address"
-        default rs3labsrv8.iccluster.epfl.ch
-        help
-        Enter the address of the GPU server here.
-    endmenu
-endif
