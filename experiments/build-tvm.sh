@@ -1,8 +1,4 @@
 #!/bin/bash
-python3 -m venv tvm-vta-env
-source tvm-vta-env/bin/activate
-pip install -r requirements.txt
-
 cat << 'EOF'
 ================================================================================
                               TROUBLESHOOTING GUIDE
@@ -29,6 +25,7 @@ Fix: Change to use:
 EOF
 
 cd simbricks-tvm
+rm -rf build
 mkdir build
 cp cmake/config.cmake build
 cd build

@@ -102,7 +102,7 @@ $(SHARED_LIB): $(ACCVM_ALL) config.mk
 # SCX scheduler build
 scx:
 	cd external/scx/ && meson setup --reconfigure build --prefix ~ -Denable_rust=false
-	sudo systemctl stop scx.service
+	systemctl stop scx.service
 ifeq ($(CONFIG_STOP_WORLD_MODE), 1)
 	cp scx/scx_simple.bpf.ipi.c external/scx/scheds/c/scx_simple.bpf.c
 endif
@@ -143,20 +143,20 @@ dsim: $(DSIM_ALL)
 # Test targets 
 test_single_jpeg:
 	$(CXX) $(INCLUDE) test/jpeg_decoder_test/application_single_decode.c src/drivers/*.c -o jpeg_test.out
-	sudo JPEG_DEVICE=0 ./nex ./jpeg_test.out
+	JPEG_DEVICE=0 ./nex ./jpeg_test.out
 
 multi_jpeg_post:
 	$(CXX) -Iinclude -O3 test/jpeg_decoder_test/multiple_device_processing.c src/drivers/*.c -o multi_jpeg_test_post.out -lpthread
 
 test_multi_jpeg_post:
 	$(CXX) -Iinclude -O3 test/jpeg_decoder_test/multiple_device_processing.c src/drivers/*.c -o multi_jpeg_test_post.out -lpthread
-	sudo ./nex ./multi_jpeg_test_post.out 8
+	./nex ./multi_jpeg_test_post.out 8
 
 compile_matmul:
 	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
 
 test_matmul:
-	sudo ./nex ./test/nex.matmul
+	./nex ./test/nex.matmul
 
 autoconfig:
 	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
