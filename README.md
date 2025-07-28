@@ -62,8 +62,6 @@ sudo make install
 ## Configuration
 
 NEX uses a Kconfig-based configuration system. Key configuration options:
-### Project path
-- **PROJECT_PATH**: Enter NEX path here.
 
 ### Host Simulation Modes
 - **ROUND_BASED_Sim**: Epoch-based CPU scheduling with configurable time slices

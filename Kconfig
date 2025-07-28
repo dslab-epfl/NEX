@@ -150,7 +150,7 @@ menu "Host mem/pcie simulation"
                 help
                     Set the cache miss fetch latency in nanoseconds
             config CACHE_FIRST_HIT
-                bool "Access empty cacheline is hit or miss "
+                bool "Access empty cacheline is hit or miss"
                 default n
                 help
                     Set whether the first access to an empty cacheline is considered a hit or a miss.

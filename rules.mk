@@ -119,7 +119,16 @@ clean:
 	rm -f $(BPF_OBJECTS)
 
 menuconfig:
+	@# Automatically set CONFIG_PROJECT_PATH to current directory before menuconfig
+	@if [ -f .config ]; then \
+		echo "Auto-setting CONFIG_PROJECT_PATH to current directory..."; \
+		sed -i 's|^CONFIG_PROJECT_PATH=.*|CONFIG_PROJECT_PATH="$(CURDIR)"|' .config || true; \
+	fi
 	@scripts/menuconfig.py
+	@# Ensure CONFIG_PROJECT_PATH is set after menuconfig if .config was created/modified
+	@if [ -f .config ]; then \
+		sed -i 's|^CONFIG_PROJECT_PATH=.*|CONFIG_PROJECT_PATH="$(CURDIR)"|' .config || true; \
+	fi
 
 # Install target
 install: $(EXEC_BINARY)
