@@ -153,13 +153,13 @@ test_multi_jpeg_post:
 	sudo ./nex ./multi_jpeg_test_post.out 8
 
 compile_matmul:
-	$(CXX) -Iinclude -O3 test/nex.matmul.c -o nex.matmul
+	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
 
 test_matmul:
 	sudo ./nex ./test/nex.matmul
 
 autoconfig:
-	$(CXX) -Iinclude -O3 test/nex.matmul.c -o nex.matmul
+	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
 	./test/autoconfig.sh $(CONFIG_PROJECT_PATH) 3 700 1000
 
 
