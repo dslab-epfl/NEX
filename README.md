@@ -147,6 +147,8 @@ python plot_simtime_speedup.py
 ```
 Note: If your env can't run plot, source the env we created for TVM experiments. Run this command first:`source <NEX-path>/experiments/tvm-vta-env/bin/activate`
 
+To run gem5 related experiments, please refer to repo `https://github.com/dslab-epfl/SimBricks-LPN/`.
+
 
 ## Contact
 
