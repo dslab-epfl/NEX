@@ -2,80 +2,80 @@
 
 # Filename to label mapping
 filename_to_label_map = {
-    'bench5-legacy-dsim.txt': 'Protoacc-NEX-bench5-dsim',
     'bench5-rtl.txt': 'Protoacc-NEX-bench5-rtl',
-    'bench1-legacy-dsim.txt': 'Protoacc-NEX-bench1-dsim',
-    'bench4-legacy-dsim.txt': 'Protoacc-NEX-bench4-dsim',
-    'bench3-legacy-dsim.txt': 'Protoacc-NEX-bench3-dsim',
+    'bench3-dsim.txt': 'Protoacc-NEX-bench3-dsim',
+    'bench4-dsim.txt': 'Protoacc-NEX-bench4-dsim',
+    'bench1-dsim.txt': 'Protoacc-NEX-bench1-dsim',
     'bench0-rtl.txt': 'Protoacc-NEX-bench0-rtl',
+    'bench2-dsim.txt': 'Protoacc-NEX-bench2-dsim',
     'bench1-rtl.txt': 'Protoacc-NEX-bench1-rtl',
     'bench2-rtl.txt': 'Protoacc-NEX-bench2-rtl',
-    'bench2-legacy-dsim.txt': 'Protoacc-NEX-bench2-dsim',
     'bench3-rtl.txt': 'Protoacc-NEX-bench3-rtl',
     'bench4-rtl.txt': 'Protoacc-NEX-bench4-rtl',
-    'bench0-legacy-dsim.txt': 'Protoacc-NEX-bench0-dsim',
+    'bench5-dsim.txt': 'Protoacc-NEX-bench5-dsim',
+    'bench0-dsim.txt': 'Protoacc-NEX-bench0-dsim',
 }
 
 # Combined data as dictionary
 performance_data = {
-    'Protoacc-NEX-bench5-dsim': {
-        'latency': 17334000,
-        'real_time': 157.606,
-        'filename': 'bench5-legacy-dsim.txt'
-    },
     'Protoacc-NEX-bench5-rtl': {
-        'latency': 21762000,
-        'real_time': 192.7555,
+        'latency': 22089000,
+        'real_time': 369.07,
         'filename': 'bench5-rtl.txt'
     },
-    'Protoacc-NEX-bench1-dsim': {
-        'latency': 241000,
-        'real_time': 2.84525,
-        'filename': 'bench1-legacy-dsim.txt'
+    'Protoacc-NEX-bench3-dsim': {
+        'latency': 2363500,
+        'real_time': 47.144,
+        'filename': 'bench3-dsim.txt'
     },
     'Protoacc-NEX-bench4-dsim': {
-        'latency': 2976000,
-        'real_time': 31.682,
-        'filename': 'bench4-legacy-dsim.txt'
+        'latency': 3012000,
+        'real_time': 57.637,
+        'filename': 'bench4-dsim.txt'
     },
-    'Protoacc-NEX-bench3-dsim': {
-        'latency': 2321000,
-        'real_time': 26.3135,
-        'filename': 'bench3-legacy-dsim.txt'
+    'Protoacc-NEX-bench1-dsim': {
+        'latency': 258333,
+        'real_time': 3.636,
+        'filename': 'bench1-dsim.txt'
     },
     'Protoacc-NEX-bench0-rtl': {
-        'latency': 4448000,
-        'real_time': 33.25125,
+        'latency': 4497500,
+        'real_time': 77.21300000000001,
         'filename': 'bench0-rtl.txt'
     },
+    'Protoacc-NEX-bench2-dsim': {
+        'latency': 22445000,
+        'real_time': 337.8586666666667,
+        'filename': 'bench2-dsim.txt'
+    },
     'Protoacc-NEX-bench1-rtl': {
-        'latency': 290000,
-        'real_time': 1.954,
+        'latency': 256888,
+        'real_time': 1.9407,
         'filename': 'bench1-rtl.txt'
     },
     'Protoacc-NEX-bench2-rtl': {
-        'latency': 21414000,
-        'real_time': 186.11025,
+        'latency': 20827000,
+        'real_time': 355.46166666666664,
         'filename': 'bench2-rtl.txt'
     },
-    'Protoacc-NEX-bench2-dsim': {
-        'latency': 17313000,
-        'real_time': 150.44675,
-        'filename': 'bench2-legacy-dsim.txt'
-    },
     'Protoacc-NEX-bench3-rtl': {
-        'latency': 2335000,
-        'real_time': 16.722,
+        'latency': 2363000,
+        'real_time': 32.656,
         'filename': 'bench3-rtl.txt'
     },
     'Protoacc-NEX-bench4-rtl': {
-        'latency': 2997000,
-        'real_time': 22.054,
+        'latency': 3031000,
+        'real_time': 44.998333333333335,
         'filename': 'bench4-rtl.txt'
     },
+    'Protoacc-NEX-bench5-dsim': {
+        'latency': 23680500,
+        'real_time': 273.5946666666667,
+        'filename': 'bench5-dsim.txt'
+    },
     'Protoacc-NEX-bench0-dsim': {
-        'latency': 4442000,
-        'real_time': 48.54425,
-        'filename': 'bench0-legacy-dsim.txt'
+        'latency': 4478000,
+        'real_time': 101.35533333333332,
+        'filename': 'bench0-dsim.txt'
     },
 }

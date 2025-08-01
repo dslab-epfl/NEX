@@ -255,7 +255,7 @@ for label in ax3.get_xticklabels():
 ax3.tick_params(axis='x', labelsize=ticklabel_size)
 ax3.tick_params(axis='y', labelsize=ticklabel_size_y)
 # ax3.set_yscale('log')
-ax3.set_ylim(0,25)
+ax3.set_ylim(0,40)
 ax3.set_xlim(-0.23, 17.2)
 yticks = ax3.get_yticks()  # Get existing y-ticks
 yticks = [5, 10, 15] # Add y=20 if not already present

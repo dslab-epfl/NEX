@@ -25,19 +25,18 @@ def extract_data_from_json(filepath):
     perf0_matches = re.findall(r'PERF 0, ns new (\d+)', data)
     if perf0_matches:
         total = 0
-        for ele in perf0_matches:
+        for ele in perf0_matches[1:]:
             total += int(ele)
-        # perf0_number = total // len(perf0_matches)  # Average over all PERF
-        # perf0_number = total // len(perf0_matches)  # Average over all PERF
-        perf0_number = int(perf0_matches[0]) 
+        perf0_number = total // len(perf0_matches[1:])  # Average over all PERF
+        # perf0_number = int(perf0_matches[-1]) 
 
     perf1_matches = re.findall(r'PERF 1, ns new (\d+)', data)
     if perf1_matches:
         total = 0
-        for ele in perf1_matches:
+        for ele in perf1_matches[1:]:
             total += int(ele)
-        perf1_number = total // len(perf1_matches)  # Average over all PERF
-        perf1_number = int(perf1_matches[0]) 
+        perf1_number = total // len(perf1_matches[1:])  # Average over all PERF
+        # perf1_number = int(perf1_matches[-1]) 
 
     assert len(perf0_matches) > 0, "No PERF 0 matches found"
 
@@ -47,12 +46,7 @@ def extract_data_from_json(filepath):
 
     print(time_taken, perf0_number, perf1_number)
 
-    latency_data = perf0_number
-    # if "bench2" in filepath or "bench5" in filepath:
-    #     # gem5 is inaccurate for perf0 portion
-    #     latency_data = perf1_number
-        
-    return latency_data, time_taken/len(perf0_matches)
+    return perf0_number, perf1_number, time_taken/len(perf0_matches)
 
 def filename_to_label(filename):
     """
@@ -95,9 +89,14 @@ def main():
             print(f"Processing {log_file.name}...")
             
             try:
-                time_taken, real_time = extract_data_from_json(log_file)
-                
+
+                perf0_number, perf1_number, real_time = extract_data_from_json(log_file)
                 label = filename_to_label(log_file.name)
+
+                latency_data = perf0_number
+                if "bench2" in label or "bench5" in label:
+                    # gem5 is inaccurate for perf0 portion
+                    latency_data = perf1_number
                 
                 # Store filename to label mapping
                 filename_to_label_map[log_file.name] = label
@@ -105,7 +104,7 @@ def main():
                 result = {
                     'filename': log_file.name,
                     'label': label,
-                    'latency': time_taken,
+                    'latency': latency_data,
                     'real_time': real_time,
                     'source_dir': str(search_dir)
                 }
@@ -113,14 +112,26 @@ def main():
                 all_results.append(result)
                 
                 print(f"  Label: {label}")
-                print(f"  Time taken: {time_taken}ns" if time_taken else "  Time taken: None")
+                print(f"  Time taken: {latency_data}ns" if latency_data else "  Time taken: None")
                 print(f"  Real time: {real_time:.2f}s" if real_time else "  Real time: None")
                 
             except Exception as e:
-                print(f"  Error processing {log_file.name}: {e}")
+                print(f"  Error processing {log_file.name}: {e}; fill in trash data")
+
+                label = filename_to_label(log_file.name)
+                result = {
+                    'filename': log_file.name,
+                    'label': label,
+                    'latency': 0,
+                    'real_time': 1,
+                    'source_dir': str(search_dir)
+                }
+                
+                all_results.append(result)
+                
     
     if not all_results:
-        print("No files or error occurred found in any search directory")
+        print("No files found or error occurred in any search directory")
         return
     
 

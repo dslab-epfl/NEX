@@ -8,7 +8,7 @@ if [ ! -f "$EXECUTABLE" ]; then
 fi
 
 # Run the executable num_repeats times
-for i in {1..3}; do
+for i in {1..10}; do
     echo "Run $i:"
     PROTOACC_DEVICE=0 taskset -c 2 $EXECUTABLE
     echo "---------------------------------"

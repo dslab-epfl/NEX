@@ -1,96 +1,75 @@
 shm_path: /nex_mmio_regions
 /nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x7ce58bfd8000, size 163840 bytes.
+Memory mapped at address 0x7e050404a000, size 163840 bytes.
 LD_PRELOAD
 Run 1:
 shm_path: /nex_mmio_regions
 /nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x7bbc03054000, size 163840 bytes.
+Memory mapped at address 0x763e02ae3000, size 163840 bytes.
 LD_PRELOAD
 s1
 Initializing memory mapping
 protoacc driver shm_path: protoacc_nex_dma_0
 protoacc_nex_dma_0 sb.st_size: 536870912
-Memory mapped at address 0x7bbbe2d46000, size 536870912 bytes.
+Memory mapped at address 0x763de2800000, size 536870912 bytes.
 protoacc driver shm_path: /nex_mmio_regions
 /nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x7bbc0302c000, size 163840 bytes.
-mem base at set up 7bbbe2d46000
+Memory mapped at address 0x763e02abb000, size 163840 bytes.
+mem base at set up 763de2800000
 s2
 s3
-PERF 0, ns new 21762000 (s 25000, e 21787000)
-PERF 1, ns new 18596000 (s 3192000, e 21788000)
+PERF 0, ns new 25271000 (s 22000, e 25293000)
+PERF 1, ns new 21904000 (s 3390000, e 25294000)
 s4
-167521681614 ns per iter. iterations: 1
+343204383162 ns per iter. iterations: 1
 ---------------------------------
 Run 2:
 shm_path: /nex_mmio_regions
 /nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x78870c4e1000, size 163840 bytes.
+Memory mapped at address 0x7f596be74000, size 163840 bytes.
 LD_PRELOAD
 s1
 Initializing memory mapping
 protoacc driver shm_path: protoacc_nex_dma_0
 protoacc_nex_dma_0 sb.st_size: 536870912
-Memory mapped at address 0x7886ec200000, size 536870912 bytes.
+Memory mapped at address 0x7f594bc00000, size 536870912 bytes.
 protoacc driver shm_path: /nex_mmio_regions
 /nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x78870c4b9000, size 163840 bytes.
-mem base at set up 7886ec200000
+Memory mapped at address 0x7f596be4c000, size 163840 bytes.
+mem base at set up 7f594bc00000
 s2
 s3
-PERF 0, ns new 25289000 (s 21808000, e 47097000)
-PERF 1, ns new 22084000 (s 25014000, e 47098000)
+PERF 0, ns new 25469000 (s 25316000, e 50785000)
+PERF 1, ns new 22068000 (s 28720000, e 50788000)
 s4
-202836651115 ns per iter. iterations: 1
+382817808381 ns per iter. iterations: 1
 ---------------------------------
 Run 3:
 shm_path: /nex_mmio_regions
 /nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x7590bfc20000, size 163840 bytes.
+Memory mapped at address 0x720dee035000, size 163840 bytes.
 LD_PRELOAD
 s1
 Initializing memory mapping
 protoacc driver shm_path: protoacc_nex_dma_0
 protoacc_nex_dma_0 sb.st_size: 536870912
-Memory mapped at address 0x75909f946000, size 536870912 bytes.
+Memory mapped at address 0x720dcde00000, size 536870912 bytes.
 protoacc driver shm_path: /nex_mmio_regions
 /nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x75909f91e000, size 163840 bytes.
-mem base at set up 75909f946000
+Memory mapped at address 0x720dcddd8000, size 163840 bytes.
+mem base at set up 720dcde00000
 s2
 s3
-PERF 0, ns new 25284000 (s 47123000, e 72407000)
-PERF 1, ns new 22072000 (s 50336000, e 72408000)
+PERF 0, ns new 25528000 (s 50808000, e 76336000)
+PERF 1, ns new 22110000 (s 54227000, e 76337000)
 s4
-202550837953 ns per iter. iterations: 1
----------------------------------
-Run 4:
-shm_path: /nex_mmio_regions
-/nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x78ed5986b000, size 163840 bytes.
-LD_PRELOAD
-s1
-Initializing memory mapping
-protoacc driver shm_path: protoacc_nex_dma_0
-protoacc_nex_dma_0 sb.st_size: 536870912
-Memory mapped at address 0x78ed39600000, size 536870912 bytes.
-protoacc driver shm_path: /nex_mmio_regions
-/nex_mmio_regions sb.st_size: 163840
-Memory mapped at address 0x78ed59843000, size 163840 bytes.
-mem base at set up 78ed39600000
-s2
-s3
-PERF 0, ns new 25223000 (s 72431000, e 97654000)
-PERF 1, ns new 22040000 (s 75615000, e 97655000)
-s4
-197976094771 ns per iter. iterations: 1
+381083527454 ns per iter. iterations: 1
 ---------------------------------
 Starting NEX with CONFIG_EXTRA_COST_TIME 850init /nex_mmio_regions
 init protoacc_nex_dma_0
-PID 1828115 written to BPF map
+PID 1748320 written to BPF map
 
 ===
-Execution time (ms): 771022
+Execution time (ms): 1107210
 Error upper bound (us): 0
 ===

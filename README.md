@@ -1,14 +1,14 @@
 # NEX - Hardware Accelerator Full-Stack Simulation Framework
 
-NEX is a simulation framework for running hardware accelerated software full-stack end-to-end. NEX supports unmodified software stack except drivers for accelerators need to be modified slightly for NEX to interpose between software and hardware. 
+NEX is a simulation framework for running hardware-accelerated software full-stack end-to-end. NEX supports unmodified software stacks except that drivers for accelerators need to be modified slightly for NEX to interpose between software and hardware. 
 
-NEX runs software on the actual CPUs without simulating any CPU architectures. NEX does support simulating more virtual CPUs than what's avaliable.   
+NEX runs software on actual CPUs without simulating any CPU architectures. NEX does support simulating more virtual CPUs than what's available.   
 
-NEX supports hardware accelerator simulators in the form of RTL simulator or DSim (LPN-based simulator model). Accelerators including Versatile Tensor Accelerator (VTA), hardware JPEG Decoder, and Protobuf ser./deser. acceleraotr (Protoacc) are integrated into NEX right now. NEX can run multiple of such accelerators as configured. 
+NEX supports hardware accelerator simulators in the form of RTL simulators or DSim (LPN-based simulator models). Accelerators including Versatile Tensor Accelerator (VTA), hardware JPEG Decoder, and Protobuf serialization/deserialization accelerator (Protoacc) are integrated into NEX right now. NEX can run multiple such accelerators as configured. 
 
-NEX supports host-accelerator interconnect modeling, DMA latency modeling as well. 
+NEX supports host-accelerator interconnect modeling and DMA latency modeling as well. 
 
-NEX supports time-warp features that lets users manipulating timestamps in the application. 
+NEX supports time-warp features that let users manipulate timestamps in the application. 
 
 ## Features
 
@@ -16,7 +16,7 @@ NEX supports time-warp features that lets users manipulating timestamps in the a
 - **Dual Simulation Modes**: RTL simulation and fast decoupled functional/performance di-simulation (DSim)
 - **Host-Accelerator Interaction**: Modeling of interconnect and memory subsystem
 - **Scalable Architecture**: Support for multiple accelerator instances
-- **BPF-based Scheduling**: Controlling CPU executing based on [SCX](https://github.com/sched-ext/scx). 
+- **BPF-based Scheduling**: Controlling CPU execution based on [SCX](https://github.com/sched-ext/scx). 
 
 ## Architecture
 
@@ -25,9 +25,9 @@ NEX supports time-warp features that lets users manipulating timestamps in the a
 ## Building
 
 ### Installing the Kernel
-Install kernels that has SCX support [SCX](https://github.com/sched-ext/scx)
+Install kernels that have SCX support, check [SCX](https://github.com/sched-ext/scx) repo for installation guide.
 
-For example on Ubuntu 24.04, 
+For example, on Ubuntu 24.04: 
 
 ```
 $ sudo add-apt-repository -y --enable-source ppa:arighi/sched-ext
@@ -36,25 +36,24 @@ $ sudo reboot
 ```
 
 ### Build the NEX repo
-Clone the NEX repo.
-0. 
+1. Clone the NEX repo then initialize submodules.
 ```
 git submodule update --init --recursive
 ```
-1. make scx 
+2. Make scx 
 ```
 sudo make scx -j
 ```
-2. configure NEX
+3. Configure NEX
 ```
 make menuconfig
 ```
-3. make the project. 
+4. Make the project. 
 ```
 make -j
 make dsim -j
 ```
-4. install NEX so you can it in other directories
+5. Install NEX so you can use it in other directories
 ```
 sudo make install
 ```
@@ -64,32 +63,35 @@ sudo make install
 NEX uses a Kconfig-based configuration system. Key configuration options:
 
 ### Host Simulation Modes
-- **ROUND_BASED_Sim**: Epoch-based CPU scheduling with configurable time slices
-- **TOTAL_CORES**: Enter the total number of cores on this system here.
+- **ROUND_BASED_SIM**: Epoch-based CPU scheduling with configurable time slices
+- **TOTAL_CORES**: Enter the total number of cores on this system here
 - **SIM_CORES**: Enter the number of cores you want to use for NEX simulation
-- **SIM_VIRT_CORES**: Enter the number of virtual cores you want NEX to simulate, leave it 0 if you want every threads runs on a virtual core
+- **SIM_VIRT_CORES**: Enter the number of virtual cores you want NEX to simulate; leave it 0 if you want every thread to run on a virtual core
 - **ROUND_SLICE**: Enter the epoch duration. 
-- **EXTRA_COST_TIME**: Adjustment for the epoch duration. If you don't know what to set, try `make autoconfig`, NEX runs a script to find out 
-- **DEFAULT_ON_OFF**: If you want to turn the epoch base scheduling on by default or not. Note, you can always turn the scheduling on or off in the application. When the scheduling is on, the application gets a slowdown of 10-20x
+- **EXTRA_COST_TIME**: Adjustment for the epoch duration. If you don't know what to set, try `make autoconfig`; NEX runs a script to find out 
+- **DEFAULT_ON_OFF**: Whether you want to turn epoch-based scheduling on by default or not. Note: you can always turn the scheduling on or off in the application. When the scheduling is on, the application gets a slowdown of 10-20x
 
 ### Accelerator Interactive Mode
-- **USE_FAULT**: NEX captures host to accelerator communication by segfaults
-- **USE_TICK**: NEX captures host to accelerator communication by illegal instructions as ticks (all accelerators integrated into NEX are now using this)
-- **EAGER_SYNC**: Turn of eager synchronization or not
+- **USE_FAULT**: NEX captures host-to-accelerator communication by segfaults
+- **USE_TICK**: NEX captures host-to-accelerator communication by illegal instructions as ticks (all accelerators integrated into NEX are now using this mode)
+- **EAGER_SYNC**: Turn on eager synchronization
 - **EAGER_SYNC_PERIOD**: Eager sync period in nanoseconds 
 
 ### Accelerator Configuration
 - **VTA**: Versatile Tensor Accelerator
 - **JPEG**: JPEG Decoder Accelerator
 - **Protoacc**: Protoacc Accelerator
+
+For each accelerator, you can configure:
 - **DSIM**: Functional/performance decoupled simulator based on LPN
+- **LEGACY_DSIM**: The same DSim simulator but compiled together with nex and integrated more tightly with NEX, however this is less modular. In this mode, nex can only be configured with one accelerator at a time. Legacy dsim is faster than DSIM, but we recommend using DSim instead of legacy DSim.
 - **RTL**: Verilator compiled RTL simulators
-- **FREQ**: Frequency of the accelerator
-- **LINK_DELAY**: Link delay between the accelerator and host.
+- **FREQ**: Frequency of the accelerator in MHz
+- **LINK_DELAY**: Link delay between the accelerator and host in nanoseconds (for example, PCIe link delay is typically a few hundred nanoseconds).
 - **NUM**: Number of accelerator instances.
 
 ### Memory Subsystem
-- **MEM_LPN**: memory subsystem simulator based on LPN
+- **MEM_LPN**: Memory subsystem simulator based on LPN
 - **CACHE_HIT_LATENCY**: Set the cache hit latency in nanoseconds
 - **CACHE_MISS_FETCH_LATENCY**: Set the cache miss fetch latency in nanoseconds 
 - **CACHE_FIRST_HIT**:  Set whether the first access to an empty cacheline is considered a hit or a miss
@@ -98,21 +100,24 @@ NEX uses a Kconfig-based configuration system. Key configuration options:
 
 ## Usage
 
-You can start NEX simulation simply by running the commands:
+You can start NEX simulation simply by running the command:
 ```
 sudo nex <your application>
 ```
-Note, you want to run multiple commands, you can put all your commands in a script, then run 
+Note: if you want to run multiple commands, you can put all your commands in a script, then run 
 ```
 sudo nex <your script>
 ```
+Note: sudo will reset your environment variables, use `sudo -E` to keep those.
+
+Note: if you set extra environment variables when launching nex, set it before, for example `SOME_ENV=1 nex`.
 
 ### Running Prepared Experiments
 
 Prepared experiments are available in `experiments/`:
 
 ### VTA
-Install env first (note, you might to need to fix env issues mannually, as noted in the build-tvm.sh).
+Install environment first (note: you might need to fix environment issues manually, as noted in the build-tvm.sh).
 ```bash
 cd experiments/
 ./build-tvm.sh
@@ -132,8 +137,9 @@ cd protoacc_exp
 ```
 
 ### Results
-The results are all in `<NEX>/results`
-Running the following will compile the results into python dictionary stored in `results/scripts/compiled_data`
+The results are all in `<NEX_Path>/results`.
+
+Running the following will compile the results into a Python dictionary stored in `results/scripts/compiled_data`
 ```bash
 cd results/scripts
 python extract_jpeg.py
@@ -141,13 +147,15 @@ python extract_protoacc.py
 python extract_vta.py
 ```
 
-Note, to plot the results in comparison with the gem5 based simulator, you need to copy the compiled results to `results/scripts/gem5_compiled_data`, then run 
+Note: to plot the results in comparison with the gem5-based simulator, you need to copy the compiled results to `results/scripts/gem5_compiled_data` after running gem5, then do similary extraction, then run 
 ```bash
 python plot_simtime_speedup.py
 ```
-Note: If your env can't run plot, source the env we created for TVM experiments. Run this command first:`source <NEX-path>/experiments/tvm-vta-env/bin/activate`
+Note: If your environment can't run plot, source the env we created for VTA/TVM experiments. Run this command first: `source <NEX-path>/experiments/tvm-vta-env/bin/activate`
 
-To run gem5 related experiments, please refer to repo `https://github.com/dslab-epfl/SimBricks-LPN/`.
+To run gem5-related experiments, please refer to repo `https://github.com/dslab-epfl/SimBricks-LPN/`. Note, the gem5 is configured to match `Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz`, if you run nex on a different CPU and compare results with gem5-based experiments, you may observe large differences because the CPUs don't match. 
+
+(Or if you'd like to run inside containers for gem5-related experiments, refer to the repo here `https://github.com/dslab-epfl/NEXDSIM_AE.git`)
 
 
 ## Contact

@@ -1,4 +1,9 @@
 #!/bin/bash
+
+python3 -m venv tvm-vta-env
+source tvm-vta-env/bin/activate
+pip install -r requirements.txt
+
 cat << 'EOF'
 ================================================================================
                               TROUBLESHOOTING GUIDE

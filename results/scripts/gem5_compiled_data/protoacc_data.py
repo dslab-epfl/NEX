@@ -19,7 +19,7 @@ filename_to_label_map = {
 # Combined data as dictionary
 performance_data = {
     'Protoacc-Gem5-bench4-dsim': {
-        'latency': 2705764,
+        'latency': 3281904,
         'real_time': 832.1998491883278,
         'filename': 'protoacc_benchmark-lpn-gem5_o3-bench4-1.json'
     },
@@ -29,7 +29,7 @@ performance_data = {
         'filename': 'protoacc_benchmark-lpn-gem5_o3-bench5-1.json'
     },
     'Protoacc-Gem5-bench0-dsim': {
-        'latency': 4841934,
+        'latency': 5077411,
         'real_time': 1184.4839675426483,
         'filename': 'protoacc_benchmark-lpn-gem5_o3-bench0-1.json'
     },
@@ -39,22 +39,22 @@ performance_data = {
         'filename': 'protoacc_benchmark-rtl-gem5_o3-bench2-1.json'
     },
     'Protoacc-Gem5-bench1-rtl': {
-        'latency': 223060,
+        'latency': 222885,
         'real_time': 209.4078829884529,
         'filename': 'protoacc_benchmark-rtl-gem5_o3-bench1-1.json'
     },
     'Protoacc-Gem5-bench3-rtl': {
-        'latency': 1894138,
+        'latency': 2113248,
         'real_time': 334.95151817798615,
         'filename': 'protoacc_benchmark-rtl-gem5_o3-bench3-1.json'
     },
     'Protoacc-Gem5-bench4-rtl': {
-        'latency': 2432595,
+        'latency': 3021023,
         'real_time': 389.4934735298157,
         'filename': 'protoacc_benchmark-rtl-gem5_o3-bench4-1.json'
     },
     'Protoacc-Gem5-bench1-dsim': {
-        'latency': 223121,
+        'latency': 223588,
         'real_time': 199.7983980178833,
         'filename': 'protoacc_benchmark-lpn-gem5_o3-bench1-1.json'
     },
@@ -64,7 +64,7 @@ performance_data = {
         'filename': 'protoacc_benchmark-lpn-gem5_o3-bench2-1.json'
     },
     'Protoacc-Gem5-bench0-rtl': {
-        'latency': 4825490,
+        'latency': 5148671,
         'real_time': 504.144452214241,
         'filename': 'protoacc_benchmark-rtl-gem5_o3-bench0-1.json'
     },
@@ -74,7 +74,7 @@ performance_data = {
         'filename': 'protoacc_benchmark-rtl-gem5_o3-bench5-1.json'
     },
     'Protoacc-Gem5-bench3-dsim': {
-        'latency': 2096197,
+        'latency': 2309885,
         'real_time': 199.10124576091766,
         'filename': 'protoacc_benchmark-lpn-gem5_o3-bench3-1.json'
     },
