@@ -12,6 +12,10 @@ from gem5_compiled_data.jpeg_data import performance_data as gem5_jpeg_data_dict
 from gem5_compiled_data.vta_data import performance_data as gem5_vta_data_dict
 from gem5_compiled_data.protoacc_data import performance_data as gem5_protoacc_data_dict
 
+
+print( nex_protoacc_data_dict )
+
+
 xtick_colors = ['#8B004B', '#006400', '#4B0082']
 
 benchmarks = ['JPEG',

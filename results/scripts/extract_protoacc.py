@@ -27,14 +27,17 @@ def extract_data_from_json(filepath):
         total = 0
         for ele in perf0_matches:
             total += int(ele)
-        perf0_number = total // len(perf0_matches)  # Average over all PERF
-    
+        # perf0_number = total // len(perf0_matches)  # Average over all PERF
+        # perf0_number = total // len(perf0_matches)  # Average over all PERF
+        perf0_number = int(perf0_matches[0]) 
+
     perf1_matches = re.findall(r'PERF 1, ns new (\d+)', data)
     if perf1_matches:
         total = 0
         for ele in perf1_matches:
             total += int(ele)
         perf1_number = total // len(perf1_matches)  # Average over all PERF
+        perf1_number = int(perf1_matches[0]) 
 
     assert len(perf0_matches) > 0, "No PERF 0 matches found"
 
