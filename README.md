@@ -155,7 +155,7 @@ Note: If your environment can't run plot, source the env we created for VTA/TVM 
 
 To run gem5-related experiments, please refer to repo `https://github.com/dslab-epfl/SimBricks-LPN/`. Note, the gem5 is configured to match `Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz`, if you run nex on a different CPU and compare results with gem5-based experiments, you may observe large differences because the CPUs don't match. 
 
-(Or if you'd like to run inside containers for gem5-related experiments, refer to the repo here `https://github.com/dslab-epfl/NEXDSIM_AE.git`)
+(Or if you'd like to run inside containers for gem5-related experiments, refer to the repo here `https://github.com/dslab-epfl/NEXDSIM_AE.git`, but the repo is still under testing.)
 
 
 ## Contact
