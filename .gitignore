@@ -51,7 +51,7 @@ tvm-vta-env/
 
 
 # Log files
-*.log
+#*.log
 
 # Temporary files
 *.tmp

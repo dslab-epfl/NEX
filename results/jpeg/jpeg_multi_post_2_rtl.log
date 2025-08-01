@@ -1,0 +1,358 @@
+Error finding BPF map /sys/fs/bpf/from_nex_runtime_event_q
+Error finding BPF map /sys/fs/bpf/to_nex_runtime_event_q
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7bbdedc50000, size 163840 bytes.
+LD_PRELOAD
+Using 2 threads
+jpeg driver shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x7bbdedc28000, size 163840 bytes.
+device not set, defaults to 0
+jpeg driver sched_reg->lock 0
+jpeg driver sched_reg->unlock 0
+jpeg driver shm_path: jpeg_nex_dma_0
+jpeg_nex_dma_0 sb.st_size: 536870912
+Memory mapped at address 0x7bbbf0a00000, size 536870912 bytes.
+jpeg driver shm_path: jpeg_nex_dma_1
+jpeg_nex_dma_1 sb.st_size: 536870912
+Memory mapped at address 0x7bbbd0a00000, size 536870912 bytes.
+start time 28
+Successfully loaded image with size: 26528
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/1.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a067a0
+Size: 2147510176
+Successfully loaded image with size: 115869
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/13.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a1c49d
+Size: 2147599517
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/1.jpg", duration 5265 
+value of width and height 265, 265
+Thread (device 0) finished post_processing, duration 618 
+Successfully loaded image with size: 185624
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/14.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a2d518
+Size: 2147669272
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/13.jpg", duration 22995 
+value of width and height 1158, 1158
+Thread (device 1) finished post_processing, duration 10459 
+Successfully loaded image with size: 71219
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/15.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a11633
+Size: 2147554867
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/15.jpg", duration 6861 
+value of width and height 712, 712
+Thread (device 1) finished post_processing, duration 4397 
+Successfully loaded image with size: 82537
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/16.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a14269
+Size: 2147566185
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/14.jpg", duration 39930 
+value of width and height 1856, 1856
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/16.jpg", duration 8057 
+value of width and height 825, 825
+Thread (device 1) finished post_processing, duration 5342 
+Successfully loaded image with size: 17137
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/20.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a042f1
+Size: 2147500785
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/20.jpg", duration 2023 
+value of width and height 171, 171
+Thread (device 1) finished post_processing, duration 264 
+Successfully loaded image with size: 68385
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/21.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a10b21
+Size: 2147552033
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/21.jpg", duration 4034 
+value of width and height 683, 683
+Thread (device 1) finished post_processing, duration 3672 
+Successfully loaded image with size: 38245
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/22.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a09565
+Size: 2147521893
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/22.jpg", duration 4839 
+value of width and height 382, 382
+Thread (device 0) finished post_processing, duration 28339 
+Successfully loaded image with size: 62344
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/23.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a0f388
+Size: 2147545992
+Thread (device 1) finished post_processing, duration 1167 
+Successfully loaded image with size: 11863
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/24.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a02e57
+Size: 2147495511
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/24.jpg", duration 2035 
+value of width and height 118, 118
+Thread (device 1) finished post_processing, duration 120 
+Successfully loaded image with size: 198700
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/25.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a3082c
+Size: 2147682348
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/23.jpg", duration 7672 
+value of width and height 623, 623
+Thread (device 0) finished post_processing, duration 3451 
+Successfully loaded image with size: 166774
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/26.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a28b76
+Size: 2147650422
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/26.jpg", duration 24993 
+value of width and height 1667, 1667
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/25.jpg", duration 39513 
+value of width and height 1987, 1987
+Thread (device 0) finished post_processing, duration 23765 
+Successfully loaded image with size: 24212
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/27.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a05e94
+Size: 2147507860
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/27.jpg", duration 2021 
+value of width and height 242, 242
+Thread (device 0) finished post_processing, duration 564 
+Successfully loaded image with size: 880207
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/29.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0ad6e4f
+Size: 2148363855
+Thread (device 1) finished post_processing, duration 34659 
+Successfully loaded image with size: 181957
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/32.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a2c6c5
+Size: 2147665605
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/32.jpg", duration 22976 
+value of width and height 1819, 1819
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/29.jpg", duration 59670 
+value of width and height 2048, 2048
+Thread (device 1) finished post_processing, duration 28715 
+Successfully loaded image with size: 112308
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/33.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a1b6b4
+Size: 2147595956
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/33.jpg", duration 9670 
+value of width and height 1123, 1123
+Thread (device 1) finished post_processing, duration 11043 
+Successfully loaded image with size: 120907
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/34.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a1d84b
+Size: 2147604555
+Thread (device 0) finished post_processing, duration 36257 
+Successfully loaded image with size: 246328
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/36.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a3c238
+Size: 2147729976
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/34.jpg", duration 24174 
+value of width and height 1209, 1209
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/36.jpg", duration 21374 
+value of width and height 2048, 2048
+Thread (device 1) finished post_processing, duration 12696 
+Successfully loaded image with size: 499064
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/37.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a79d78
+Size: 2147982712
+Thread (device 0) finished post_processing, duration 36625 
+Successfully loaded image with size: 877570
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/39.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0ad6402
+Size: 2148361218
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/39.jpg", duration 73807 
+value of width and height 2048, 2048
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/37.jpg", duration 114439 
+value of width and height 2048, 2048
+Thread (device 0) finished post_processing, duration 36348 
+Successfully loaded image with size: 468086
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/40.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a72476
+Size: 2147951734
+Thread (device 1) finished post_processing, duration 36773 
+Successfully loaded image with size: 111871
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/41.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a1b4ff
+Size: 2147595519
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/41.jpg", duration 13707 
+value of width and height 1118, 1118
+Thread (device 1) finished post_processing, duration 11020 
+Successfully loaded image with size: 149973
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/42.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a249d5
+Size: 2147633621
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/40.jpg", duration 44373 
+value of width and height 2048, 2048
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/42.jpg", duration 27385 
+value of width and height 1499, 1499
+Thread (device 0) finished post_processing, duration 36372 
+Successfully loaded image with size: 394626
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/43.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a60582
+Size: 2147878274
+Thread (device 1) finished post_processing, duration 19358 
+Successfully loaded image with size: 90101
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/44.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a15ff5
+Size: 2147573749
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/44.jpg", duration 23800 
+value of width and height 901, 901
+Thread (device 1) finished post_processing, duration 7084 
+Successfully loaded image with size: 91925
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/45.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a16715
+Size: 2147575573
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/45.jpg", duration 11696 
+value of width and height 919, 919
+Thread (device 1) finished post_processing, duration 7012 
+Successfully loaded image with size: 80142
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/46.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a1390e
+Size: 2147563790
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/43.jpg", duration 54465 
+value of width and height 2048, 2048
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/46.jpg", duration 8057 
+value of width and height 801, 801
+Thread (device 1) finished post_processing, duration 5354 
+Successfully loaded image with size: 456473
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/47.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a6f719
+Size: 2147940121
+Thread (device 0) finished post_processing, duration 34707 
+Successfully loaded image with size: 299424
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/48.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a491a0
+Size: 2147783072
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/47.jpg", duration 28606 
+value of width and height 2048, 2048
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/48.jpg", duration 27814 
+value of width and height 2048, 2048
+Thread (device 1) finished post_processing, duration 35003 
+Successfully loaded image with size: 2036780
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/49.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0bf142c
+Size: 2149520428
+Thread (device 0) finished post_processing, duration 36158 
+Successfully loaded image with size: 59410
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/5.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a0e812
+Size: 2147543058
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/5.jpg", duration 5252 
+value of width and height 594, 594
+Thread (device 0) finished post_processing, duration 3240 
+Successfully loaded image with size: 109529
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/51.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0a1abd9
+Size: 2147593177
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/51.jpg", duration 8065 
+value of width and height 1095, 1095
+Thread (device 0) finished post_processing, duration 10067 
+Successfully loaded image with size: 1975045
+Thread (device 0) decoding image "/home/jiacma/new-NEX/test/data/52.jpg"
+Decoding JPEG
+Addr: 136047126118400
+Dst: 0x7bbbf0be2305
+Size: 2149458693
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/49.jpg", duration 108838 
+value of width and height 2048, 2048
+Thread (device 1) finished post_processing, duration 36546 
+Successfully loaded image with size: 69725
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/6.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a1105d
+Size: 2147553373
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/6.jpg", duration 21778 
+value of width and height 697, 697
+Thread (device 1) finished post_processing, duration 4211 
+Successfully loaded image with size: 210739
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/8.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a33733
+Size: 2147694387
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/8.jpg", duration 35884 
+value of width and height 2048, 2048
+Thread (device 1) finished post_processing, duration 36345 
+Successfully loaded image with size: 79929
+Thread (device 1) decoding image "/home/jiacma/new-NEX/test/data/9.jpg"
+Decoding JPEG
+Addr: 136046589247488
+Dst: 0x7bbbd0a13839
+Size: 2147563577
+Thread (device 1) finished decoding image "/home/jiacma/new-NEX/test/data/9.jpg", duration 4854 
+value of width and height 799, 799
+Thread (device 1) finished post_processing, duration 5575 
+Thread (device 0) finished decoding image "/home/jiacma/new-NEX/test/data/52.jpg", duration 319367 
+value of width and height 2048, 2048
+Thread (device 0) finished post_processing, duration 23510 
+Decoding succeeded
+end time 1004634
+Time taken 1004606 us
+Real latency 1293.188540
+init /nex_mmio_regions
+init jpeg_nex_dma_0
+init jpeg_nex_dma_1
+PID 1490456 written to BPF map
+
+===
+Execution time (ms): 1293191
+Error upper bound (us): 0
+===
+EXIT: Scheduler unregistered from user space

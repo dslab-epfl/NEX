@@ -1,0 +1,341 @@
+make: Entering directory '/home/jiacma/new-NEX'
+g++ -Iinclude -Ilib test/jpeg_decoder_test/application_single_decode.c src/drivers/*.c -o jpeg_test.out
+src/drivers/jpegdecoder_driver.c: In function ‘uintptr_t initialize_jpeg_decoder()’:
+src/drivers/jpegdecoder_driver.c:25:39: warning: pointer of type ‘void *’ used in arithmetic [-Wpointer-arith]
+   25 |   JPEG_DECODER_MMIO_BASE = (MMIO_BASE + (10*JPEG_DECODER+device_num)*4096);
+      |                             ~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/drivers/jpegdecoder_driver.c: In function ‘void decode_jpeg(uintptr_t, uintptr_t, size_t, void*)’:
+src/drivers/jpegdecoder_driver.c:72:29: warning: pointer of type ‘void *’ used in arithmetic [-Wpointer-arith]
+   72 |   regs->dst = (uint64_t)(dst-dma_base);
+      |                          ~~~^~~~~~~~~
+src/drivers/jpegdecoder_driver.c: In function ‘void decode_jpeg_on_device(int, uintptr_t, uintptr_t, size_t, void*)’:
+src/drivers/jpegdecoder_driver.c:91:42: warning: pointer of type ‘void *’ used in arithmetic [-Wpointer-arith]
+   91 |   JpegRegs *regs = (JpegRegs *)(MMIO_BASE+(10*JPEG_DECODER+dev_id)*4096);
+      |                                 ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/drivers/jpegdecoder_driver.c: In function ‘int decode_done_on_device(int)’:
+src/drivers/jpegdecoder_driver.c:111:42: warning: pointer of type ‘void *’ used in arithmetic [-Wpointer-arith]
+  111 |   JpegRegs *regs = (JpegRegs *)(MMIO_BASE+(10*JPEG_DECODER+dev_id)*4096);
+      |                                 ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sudo JPEG_DEVICE=0 ./nex ./jpeg_test.out
+Error finding BPF map /sys/fs/bpf/from_nex_runtime_event_q
+Error finding BPF map /sys/fs/bpf/to_nex_runtime_event_q
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x775554683000, size 163840 bytes.
+LD_PRELOAD
+jpeg driver shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x77555465b000, size 163840 bytes.
+device: 0
+jpeg driver sched_reg->lock 0
+jpeg driver sched_reg->unlock 0
+jpeg driver shm_path: jpeg_nex_dma_0
+jpeg_nex_dma_0 sb.st_size: 536870912
+Memory mapped at address 0x775534400000, size 536870912 bytes.
+--- Starting app ---
+Successfully loaded image with size: 24212
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534405e94
+Size: 2147507860
+Decoding image 0
+Time taken 1756 us
+Successfully loaded image with size: 26528
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755344067a0
+Size: 2147510176
+Decoding image 1
+Time taken 5025 us
+Successfully loaded image with size: 80142
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553441390e
+Size: 2147563790
+Decoding image 10
+Time taken 7881 us
+Successfully loaded image with size: 115869
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553441c49d
+Size: 2147599517
+Decoding image 13
+Time taken 22667 us
+Successfully loaded image with size: 185624
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553442d518
+Size: 2147669272
+Decoding image 14
+Time taken 39589 us
+Successfully loaded image with size: 71219
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534411633
+Size: 2147554867
+Decoding image 15
+Time taken 6762 us
+Successfully loaded image with size: 82537
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534414269
+Size: 2147566185
+Decoding image 16
+Time taken 7964 us
+Successfully loaded image with size: 17137
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755344042f1
+Size: 2147500785
+Decoding image 2
+Time taken 1750 us
+Successfully loaded image with size: 17137
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755344042f1
+Size: 2147500785
+Decoding image 20
+Time taken 1753 us
+Successfully loaded image with size: 68385
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534410b21
+Size: 2147552033
+Decoding image 21
+Time taken 4080 us
+Successfully loaded image with size: 38245
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534409565
+Size: 2147521893
+Decoding image 22
+Time taken 4703 us
+Successfully loaded image with size: 62344
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553440f388
+Size: 2147545992
+Decoding image 23
+Time taken 7350 us
+Successfully loaded image with size: 11863
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534402e57
+Size: 2147495511
+Decoding image 24
+Time taken 1744 us
+Successfully loaded image with size: 198700
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553443082c
+Size: 2147682348
+Decoding image 25
+Time taken 39265 us
+Successfully loaded image with size: 166774
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534428b76
+Size: 2147650422
+Decoding image 26
+Time taken 24888 us
+Successfully loaded image with size: 24212
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534405e94
+Size: 2147507860
+Decoding image 27
+Time taken 1749 us
+Successfully loaded image with size: 880207
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755344d6e4f
+Size: 2148363855
+Decoding image 29
+Time taken 59513 us
+Successfully loaded image with size: 181957
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553442c6c5
+Size: 2147665605
+Decoding image 3
+Time taken 22940 us
+Successfully loaded image with size: 181957
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553442c6c5
+Size: 2147665605
+Decoding image 32
+Time taken 22876 us
+Successfully loaded image with size: 112308
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553441b6b4
+Size: 2147595956
+Decoding image 33
+Time taken 9701 us
+Successfully loaded image with size: 120907
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553441d84b
+Size: 2147604555
+Decoding image 34
+Time taken 23897 us
+Successfully loaded image with size: 246328
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553443c238
+Size: 2147729976
+Decoding image 36
+Time taken 21448 us
+Successfully loaded image with size: 499064
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534479d78
+Size: 2147982712
+Decoding image 37
+Time taken 114260 us
+Successfully loaded image with size: 877570
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755344d6402
+Size: 2148361218
+Decoding image 39
+Time taken 72825 us
+Successfully loaded image with size: 468086
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534472476
+Size: 2147951734
+Decoding image 4
+Time taken 44231 us
+Successfully loaded image with size: 468086
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534472476
+Size: 2147951734
+Decoding image 40
+Time taken 44239 us
+Successfully loaded image with size: 111871
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553441b4ff
+Size: 2147595519
+Decoding image 41
+Time taken 13667 us
+Successfully loaded image with size: 149973
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755344249d5
+Size: 2147633621
+Decoding image 42
+Time taken 27108 us
+Successfully loaded image with size: 394626
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534460582
+Size: 2147878274
+Decoding image 43
+Time taken 54040 us
+Successfully loaded image with size: 90101
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534415ff5
+Size: 2147573749
+Decoding image 44
+Time taken 23662 us
+Successfully loaded image with size: 91925
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534416715
+Size: 2147575573
+Decoding image 45
+Time taken 11640 us
+Successfully loaded image with size: 80142
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553441390e
+Size: 2147563790
+Decoding image 46
+Time taken 7766 us
+Successfully loaded image with size: 456473
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553446f719
+Size: 2147940121
+Decoding image 47
+Time taken 28327 us
+Successfully loaded image with size: 299424
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755344491a0
+Size: 2147783072
+Decoding image 48
+Time taken 27618 us
+Successfully loaded image with size: 2036780
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755345f142c
+Size: 2149520428
+Decoding image 49
+Time taken 109015 us
+Successfully loaded image with size: 59410
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553440e812
+Size: 2147543058
+Decoding image 5
+Time taken 5016 us
+Successfully loaded image with size: 109529
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553441abd9
+Size: 2147593177
+Decoding image 51
+Time taken 7959 us
+Successfully loaded image with size: 1975045
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x7755345e2305
+Size: 2149458693
+Decoding image 52
+Time taken 318785 us
+Successfully loaded image with size: 69725
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553441105d
+Size: 2147553373
+Decoding image 6
+Time taken 21437 us
+Successfully loaded image with size: 456473
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x77553446f719
+Size: 2147940121
+Decoding image 7
+Time taken 28329 us
+Successfully loaded image with size: 210739
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534433733
+Size: 2147694387
+Decoding image 8
+Time taken 35155 us
+Successfully loaded image with size: 79929
+Decoding JPEG
+Addr: 131207832535040
+Dst: 0x775534413839
+Size: 2147563577
+Decoding image 9
+Time taken 4709 us
+Real latency 1756.954638
+--- App done ---
+init /nex_mmio_regions
+init jpeg_nex_dma_0
+PID 1586290 written to BPF map
+
+===
+Execution time (ms): 1756956
+Error upper bound (us): 0
+===
+EXIT: Scheduler unregistered from user space
+make: Leaving directory '/home/jiacma/new-NEX'

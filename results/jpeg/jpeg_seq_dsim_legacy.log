@@ -1,0 +1,677 @@
+make: Entering directory '/home/jiacma/new-NEX'
+g++ -Iinclude -Ilib test/jpeg_decoder_test/application_single_decode.c src/drivers/*.c -o jpeg_test.out
+src/drivers/jpegdecoder_driver.c: In function ‘uintptr_t initialize_jpeg_decoder()’:
+src/drivers/jpegdecoder_driver.c:25:39: warning: pointer of type ‘void *’ used in arithmetic [-Wpointer-arith]
+   25 |   JPEG_DECODER_MMIO_BASE = (MMIO_BASE + (10*JPEG_DECODER+device_num)*4096);
+      |                             ~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/drivers/jpegdecoder_driver.c: In function ‘void decode_jpeg(uintptr_t, uintptr_t, size_t, void*)’:
+src/drivers/jpegdecoder_driver.c:72:29: warning: pointer of type ‘void *’ used in arithmetic [-Wpointer-arith]
+   72 |   regs->dst = (uint64_t)(dst-dma_base);
+      |                          ~~~^~~~~~~~~
+src/drivers/jpegdecoder_driver.c: In function ‘void decode_jpeg_on_device(int, uintptr_t, uintptr_t, size_t, void*)’:
+src/drivers/jpegdecoder_driver.c:91:42: warning: pointer of type ‘void *’ used in arithmetic [-Wpointer-arith]
+   91 |   JpegRegs *regs = (JpegRegs *)(MMIO_BASE+(10*JPEG_DECODER+dev_id)*4096);
+      |                                 ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/drivers/jpegdecoder_driver.c: In function ‘int decode_done_on_device(int)’:
+src/drivers/jpegdecoder_driver.c:111:42: warning: pointer of type ‘void *’ used in arithmetic [-Wpointer-arith]
+  111 |   JpegRegs *regs = (JpegRegs *)(MMIO_BASE+(10*JPEG_DECODER+dev_id)*4096);
+      |                                 ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sudo JPEG_DEVICE=0 ./nex ./jpeg_test.out
+Error finding BPF map /sys/fs/bpf/from_nex_runtime_event_q
+Error finding BPF map /sys/fs/bpf/to_nex_runtime_event_q
+init /nex_mmio_regions
+init jpeg_nex_dma_0
+PID 1585643 written to BPF map
+Starting decode!
+
+Finished decode! Image size: 131072
+func_sim: should have 1024 blocks, current ps_ts 50000000
+total blocks : 1536; and average block size 15
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 361080
+func_sim: should have 2960 blocks, current ps_ts 1895000000
+total blocks : 4440; and average block size 5
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 583200
+func_sim: should have 4680 blocks, current ps_ts 7018000000
+total blocks : 7020; and average block size 11
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1728000
+func_sim: should have 13500 blocks, current ps_ts 15113000000
+total blocks : 20250; and average block size 5
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 3003000
+func_sim: should have 23688 blocks, current ps_ts 38561000000
+total blocks : 35532; and average block size 5
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 497658
+func_sim: should have 4048 blocks, current ps_ts 78867000000
+total blocks : 6072; and average block size 11
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 614400
+func_sim: should have 4800 blocks, current ps_ts 85589000000
+total blocks : 7200; and average block size 11
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 131072
+func_sim: should have 1024 blocks, current ps_ts 93539000000
+total blocks : 1536; and average block size 10
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 131072
+func_sim: should have 1024 blocks, current ps_ts 95281000000
+total blocks : 1536; and average block size 10
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 307200
+func_sim: should have 2400 blocks, current ps_ts 97024000000
+total blocks : 3600; and average block size 18
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 345102
+func_sim: should have 2816 blocks, current ps_ts 101008000000
+total blocks : 4224; and average block size 8
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 560000
+func_sim: should have 4400 blocks, current ps_ts 105705000000
+total blocks : 6600; and average block size 9
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 120000
+func_sim: should have 988 blocks, current ps_ts 113040000000
+total blocks : 1482; and average block size 7
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 3000000
+func_sim: should have 23688 blocks, current ps_ts 114788000000
+total blocks : 35532; and average block size 5
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1920000
+func_sim: should have 15000 blocks, current ps_ts 153868000000
+total blocks : 22500; and average block size 7
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 131072
+func_sim: should have 1024 blocks, current ps_ts 178598000000
+total blocks : 1536; and average block size 15
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 4492000
+func_sim: should have 35500 blocks, current ps_ts 180529000000
+total blocks : 53250; and average block size 16
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1759200
+func_sim: should have 13800 blocks, current ps_ts 241173000000
+total blocks : 20700; and average block size 8
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1759200
+func_sim: should have 13800 blocks, current ps_ts 263970000000
+total blocks : 20700; and average block size 8
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 720000
+func_sim: should have 5800 blocks, current ps_ts 286781000000
+total blocks : 8700; and average block size 12
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1843200
+func_sim: should have 14400 blocks, current ps_ts 296369000000
+total blocks : 21600; and average block size 5
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1620000
+func_sim: should have 12900 blocks, current ps_ts 320185000000
+total blocks : 19350; and average block size 12
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 8750080
+func_sim: should have 68480 blocks, current ps_ts 341472000000
+total blocks : 102720; and average block size 4
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x787939883000, size 163840 bytes.
+LD_PRELOAD
+jpeg driver shm_path: /nex_mmio_regions
+/nex_mmio_regions sb.st_size: 163840
+Memory mapped at address 0x78793985b000, size 163840 bytes.
+device: 0
+jpeg driver sched_reg->lock 0
+jpeg driver sched_reg->unlock 0
+jpeg driver shm_path: jpeg_nex_dma_0
+jpeg_nex_dma_0 sb.st_size: 536870912
+Memory mapped at address 0x78791985b000, size 536870912 bytes.
+--- Starting app ---
+Successfully loaded image with size: 24212
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919860e94
+Size: 2147507860
+Decoding image 0
+Time taken 1858 us
+Successfully loaded image with size: 26528
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198617a0
+Size: 2147510176
+Decoding image 1
+Time taken 5108 us
+Successfully loaded image with size: 80142
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791986e90e
+Size: 2147563790
+Decoding image 10
+Time taken 8091 us
+Successfully loaded image with size: 115869
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791987749d
+Size: 2147599517
+Decoding image 13
+Time taken 23437 us
+Successfully loaded image with size: 185624
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919888518
+Size: 2147669272
+Decoding image 14
+Time taken 40322 us
+Successfully loaded image with size: 71219
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791986c633
+Size: 2147554867
+Decoding image 15
+Time taken 6718 us
+Successfully loaded image with size: 82537
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791986f269
+Size: 2147566185
+Decoding image 16
+Time taken 7953 us
+Successfully loaded image with size: 17137
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791985f2f1
+Size: 2147500785
+Decoding image 2
+Time taken 1742 us
+Successfully loaded image with size: 17137
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791985f2f1
+Size: 2147500785
+Decoding image 20
+Time taken 1739 us
+Successfully loaded image with size: 68385
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791986bb21
+Size: 2147552033
+Decoding image 21
+Time taken 3981 us
+Successfully loaded image with size: 38245
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919864565
+Size: 2147521893
+Decoding image 22
+Time taken 4693 us
+Successfully loaded image with size: 62344
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791986a388
+Size: 2147545992
+Decoding image 23
+Time taken 7338 us
+Successfully loaded image with size: 11863
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791985de57
+Size: 2147495511
+Decoding image 24
+Time taken 1737 us
+Successfully loaded image with size: 198700
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791988b82c
+Size: 2147682348
+Decoding image 25
+Time taken 39078 us
+Successfully loaded image with size: 166774
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919883b76
+Size: 2147650422
+Decoding image 26
+Time taken 24731 us
+Successfully loaded image with size: 24212
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919860e94
+Size: 2147507860
+Decoding image 27
+Time taken 1750 us
+Successfully loaded image with size: 880207
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919931e4f
+Size: 2148363855
+Decoding image 29
+Time taken 60817 us
+Successfully loaded image with size: 181957
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198876c5
+Size: 2147665605
+Decoding image 3
+Time taken 22793 us
+Successfully loaded image with size: 181957
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198876c5
+Size: 2147665605
+Decoding image 32
+Time taken 22808 us
+Successfully loaded image with size: 112308
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198766b4
+Size: 2147595956
+Decoding image 33
+Time taken 9592 us
+Successfully loaded image with size: 120907
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791987884b
+Size: 2147604555
+Decoding image 34
+Time taken 23812 us
+Successfully loaded image with size: 246328
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919897238
+Size: 2147729976
+Decoding image 36
+Time taken 21280 us
+Successfully loaded image with size: 499064
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198d4d78
+Size: 2147982712
+Decoding image 37
+Time taken 116558 us
+Successfully loaded image with size: 877570
+Decoding JPEStarting decode!
+
+Finished decode! Image size: 5595136
+func_sim: should have 44032 blocks, current ps_ts 458048000000
+total blocks : 66048; and average block size 13
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 3375000
+func_sim: should have 26696 blocks, current ps_ts 530593000000
+total blocks : 40044; and average block size 11
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 3375000
+func_sim: should have 26696 blocks, current ps_ts 574636000000
+total blocks : 40044; and average block size 11
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1038336
+func_sim: should have 8192 blocks, current ps_ts 618601000000
+total blocks : 12288; and average block size 9
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 2080800
+func_sim: should have 16320 blocks, current ps_ts 632142000000
+total blocks : 24480; and average block size 6
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 4147200
+func_sim: should have 32640 blocks, current ps_ts 659120000000
+total blocks : 48960; and average block size 8
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1811616
+func_sim: should have 14280 blocks, current ps_ts 712930000000
+total blocks : 21420; and average block size 4
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 877058
+func_sim: should have 7000 blocks, current ps_ts 736463000000
+total blocks : 10500; and average block size 8
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 583200
+func_sim: should have 4680 blocks, current ps_ts 748062000000
+total blocks : 7020; and average block size 11
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 2160000
+func_sim: should have 17100 blocks, current ps_ts 755810000000
+total blocks : 25650; and average block size 17
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 2109744
+func_sim: should have 16640 blocks, current ps_ts 784012000000
+total blocks : 24960; and average block size 11
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 8388608
+func_sim: should have 65536 blocks, current ps_ts 811785000000
+total blocks : 98304; and average block size 20
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 361080
+func_sim: should have 2960 blocks, current ps_ts 920834000000
+total blocks : 4440; and average block size 13
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 614400
+func_sim: should have 4800 blocks, current ps_ts 925726000000
+total blocks : 7200; and average block size 15
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 24385536
+func_sim: should have 190512 blocks, current ps_ts 933694000000
+total blocks : 285768; and average block size 6
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 1620000
+func_sim: should have 12900 blocks, current ps_ts 1262750000000
+total blocks : 19350; and average block size 3
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 2160000
+func_sim: should have 17100 blocks, current ps_ts 1284053000000
+total blocks : 25650; and average block size 17
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 2688000
+func_sim: should have 21200 blocks, current ps_ts 1312255000000
+total blocks : 31800; and average block size 6
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+Starting decode!
+
+Finished decode! Image size: 346800
+func_sim: should have 2816 blocks, current ps_ts 1347179000000
+total blocks : 4224; and average block size 18
+setup_LPN done
+io_req_map[0].size() = 0
+io_req_map[1].size() = 0
+G
+Addr: 132461514567680
+Dst: 0x787919931402
+Size: 2148361218
+Decoding image 39
+Time taken 72554 us
+Successfully loaded image with size: 468086
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198cd476
+Size: 2147951734
+Decoding image 4
+Time taken 44042 us
+Successfully loaded image with size: 468086
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198cd476
+Size: 2147951734
+Decoding image 40
+Time taken 43964 us
+Successfully loaded image with size: 111871
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198764ff
+Size: 2147595519
+Decoding image 41
+Time taken 13544 us
+Successfully loaded image with size: 149973
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791987f9d5
+Size: 2147633621
+Decoding image 42
+Time taken 26972 us
+Successfully loaded image with size: 394626
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198bb582
+Size: 2147878274
+Decoding image 43
+Time taken 53805 us
+Successfully loaded image with size: 90101
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919870ff5
+Size: 2147573749
+Decoding image 44
+Time taken 23531 us
+Successfully loaded image with size: 91925
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919871715
+Size: 2147575573
+Decoding image 45
+Time taken 11602 us
+Successfully loaded image with size: 80142
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791986e90e
+Size: 2147563790
+Decoding image 46
+Time taken 7742 us
+Successfully loaded image with size: 456473
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198ca719
+Size: 2147940121
+Decoding image 47
+Time taken 28194 us
+Successfully loaded image with size: 299424
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198a41a0
+Size: 2147783072
+Decoding image 48
+Time taken 27471 us
+Successfully loaded image with size: 2036780
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919a4c42c
+Size: 2149520428
+Decoding image 49
+Time taken 109345 us
+Successfully loaded image with size: 59410
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919869812
+Size: 2147543058
+Decoding image 5
+Time taken 4899 us
+Successfully loaded image with size: 109529
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919875bd9
+Size: 2147593177
+Decoding image 51
+Time taken 7946 us
+Successfully loaded image with size: 1975045
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x787919a3d305
+Size: 2149458693
+Decoding image 52
+Time taken 329064 us
+Successfully loaded image with size: 69725
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791986c05d
+Size: 2147553373
+Decoding image 6
+Time taken 21297 us
+Successfully loaded image with size: 456473
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x7879198ca719
+Size: 2147940121
+Decoding image 7
+Time taken 28207 us
+Successfully loaded image with size: 210739
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791988e733
+Size: 2147694387
+Decoding image 8
+Time taken 34919 us
+Successfully loaded image with size: 79929
+Decoding JPEG
+Addr: 132461514567680
+Dst: 0x78791986e839
+Size: 2147563577
+Decoding image 9
+Time taken 4692 us
+Real latency 162.892544
+--- App done ---
+
+===
+Execution time (ms): 162894
+Error upper bound (us): 0
+===
+EXIT: Scheduler unregistered from user space
+make: Leaving directory '/home/jiacma/new-NEX'
