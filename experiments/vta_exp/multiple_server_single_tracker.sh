@@ -19,7 +19,7 @@ while [ $i -lt $1 ]; do
     sleep 2
 done
 
-sleep 10
+sleep 30
 python3 -m tvm.exec.query_rpc_tracker --host $RPC_TRACKER_IP --port 9091  > $2 2>&1
 
 MXNET_HOME=/tmp/mxnet
