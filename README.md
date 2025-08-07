@@ -130,6 +130,8 @@ cd experiments/
 ./update_configs_for_all_exp.sh
 ```
 
+This script will print `Verification (first few updated files)` at the end, please double check the udpated config is what you entered, if mismatch is found, try to `make menuconfig` in NEX, change some config to save the configs again. Then repeat `./update_configs_for_all_exp.sh`.   
+
 ### VTA
 Install environment first (note: you might need to fix environment issues manually, as noted in the build-tvm.sh).
 ```bash

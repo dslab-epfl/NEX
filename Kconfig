@@ -2,8 +2,9 @@ mainmenu "NEX Configuration"
 
 config PROJECT_PATH
     string "Project Path"
+    default "${PWD}"
     help
-      Enter the abs path to Accel-Simulatoin project here. 
+      Enter the abs path to NEX project here. 
 
 config ENABLE_BPF
     bool "Enable bpf-based scheduler"
