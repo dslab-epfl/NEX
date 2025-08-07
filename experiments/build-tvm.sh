@@ -36,3 +36,7 @@ cp cmake/config.cmake build
 cd build
 cmake ..
 make -j
+
+cd vta_exp
+./install_classify.sh
+./install_detection.sh

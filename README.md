@@ -121,7 +121,7 @@ Prepared experiments are available in `experiments/`:
 You only need to enter the following 3 configs.
 
 - **TOTAL_CORES**
-- **SIM_CORES**: leave 8 cores at least
+- **SIM_CORES**: leave 16 cores at least
 - **EXTRA_COST_TIME**
 
 Then run the following to update experiments settings
