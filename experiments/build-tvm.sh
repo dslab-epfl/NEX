@@ -1,5 +1,6 @@
 #!/bin/bash
 
+CUR_DIR=$(pwd)
 python3 -m venv tvm-vta-env
 source tvm-vta-env/bin/activate
 pip install -r requirements.txt
@@ -37,6 +38,6 @@ cd build
 cmake ..
 make -j
 
-cd vta_exp
+cd $CUR_DIR/vta_exp
 ./install_classify.sh
 ./install_detection.sh
