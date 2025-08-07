@@ -4,13 +4,7 @@ mkdir -p $CUR_DIR/../../results/jpeg/
 output=$CUR_DIR/../../results/jpeg/
 home=$CUR_DIR/../../
 
-
 make -C $home multi_jpeg_post 
-
-bash ../prepare_config.sh ../configs/jpeg/8_jpeg_dsim
-sudo nex $home/multi_jpeg_test_post.out 8 > $output/jpeg_multi_post_8_dsim.log 2>&1
-
-exit 
 
 bash ../prepare_config.sh ../configs/jpeg/2_jpeg_dsim
 sudo nex $home/multi_jpeg_test_post.out 2 > $output/jpeg_multi_post_2_dsim.log 2>&1
