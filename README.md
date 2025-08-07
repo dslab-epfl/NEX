@@ -116,6 +116,20 @@ Note: if you set extra environment variables when launching nex, set it before, 
 
 Prepared experiments are available in `experiments/`:
 
+### Configuring NEX
+
+You only need to enter the following 3 configs.
+
+- **TOTAL_CORES**
+- **SIM_CORES**: leave 8 cores at least
+- **EXTRA_COST_TIME**
+
+Then run the following to update experiments settings
+```bash
+cd experiments/
+./update_configs_for_all_exp.sh
+```
+
 ### VTA
 Install environment first (note: you might need to fix environment issues manually, as noted in the build-tvm.sh).
 ```bash
