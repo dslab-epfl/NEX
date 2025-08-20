@@ -2,7 +2,7 @@
 CUR_DIR=$(pwd)
 source $CUR_DIR/../tvm-vta-env/bin/activate
 mkdir -p $CUR_DIR/../../results/vta/
-common_env="PYTHONPATH=$CUR_DIR/../simbricks-tvm/python:$CUR_DIR/../simbricks-tvm/vta/python env TVM_NUM_THREADS=1 PATH=$PATH"
+common_env="PYTHONPATH=$CUR_DIR/../simbricks-tvm/python:$CUR_DIR/../simbricks-tvm/vta/python:$PYTHONPATH env TVM_NUM_THREADS=1 PATH=$PATH"
 
 
 bash ../prepare_config.sh ../configs/vta/1_vta_dsim_legacy

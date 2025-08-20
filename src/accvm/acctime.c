@@ -187,7 +187,7 @@ void vm_entry(t_context *ctx, uint64_t *entry_ts) {
   // ctx->vm_time += COMPENSATE_TIME;
   uint64_t virtual_ts = *entry_ts - ctx->vm_time + COMPENSATE_TIME;
   if(virtual_ts/1000+TIME_MARGIN < ctx->virtual_ts/1000){
-    printf("Thread<%lu>: vm entry time_us %lu; orig %lu\n", (unsigned long)(self_ctx->tid), virtual_ts/1000, ctx->virtual_ts/1000);
+    // printf("Thread<%lu>: vm entry time_us %lu; orig %lu\n", (unsigned long)(self_ctx->tid), virtual_ts/1000, ctx->virtual_ts/1000);
   }
   // 1000 us difference in time calculation
   assert(virtual_ts/1000+TIME_MARGIN >= ctx->virtual_ts/1000);
@@ -235,12 +235,12 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 }
 
 int clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *request, struct timespec *remain) {
-  printf("\n=== clock nanosleep\n");
+  // printf("\n=== clock nanosleep\n");
   __u32 index2 = 1;
   __u64 state = 0;
   bpf_map_lookup_elem(bpf_sched_ctrl_fd, &index2, &state);
   if(state == 0){
-    printf("clock nanosleep the quantum scheduling is off \n");
+    // printf("clock nanosleep the quantum scheduling is off \n");
     return orig_clock_nanosleep(clock_id, flags, request, remain);
   }
 
@@ -256,7 +256,7 @@ int clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *reques
 
 
 int nanosleep(const struct timespec *req, struct timespec *rem) {
-  printf("\n=== nanosleep\n");
+  // printf("\n=== nanosleep\n");
   uint64_t start_t = read_vts();
   uint64_t orig_sleep_time = req->tv_sec*1000000000 + req->tv_nsec;
   uint64_t end_t = start_t + orig_sleep_time;

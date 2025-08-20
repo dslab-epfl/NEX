@@ -103,7 +103,7 @@ int pthread_create(
     void *arg
 ) {
   
-  // #if CONFIG_USE_FAULT
+    // #if CONFIG_USE_FAULT
     // USE FAULT requires reading process memory to decode instructions
     // the scheduler control logic conflicts with thread creation when segfaults happens
     // which deadlocks the whole system
@@ -119,12 +119,7 @@ int pthread_create(
     }else{
         return orig_pthread_create(thread, attr, start_routine, arg);
     }
-  // #else
-  //   return orig_pthread_create(thread, attr, start_routine, arg);
-  // #endif
-
-
-    /* ─── custom logic after calling real pthread_create() ────────────────── */
-    /* e.g. re-enable SCX control, record the pthread_t in a map, etc. */
-
+    // #else
+    //   return orig_pthread_create(thread, attr, start_routine, arg);
+    // #endif
 }

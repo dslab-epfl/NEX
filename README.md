@@ -35,6 +35,18 @@ $ sudo apt install -y linux-generic-wip scx
 $ sudo reboot
 ```
 
+### (Nix Env)
+You can optionally install nix and use the prepared environments
+install nix with one command (check [here](https://nixos.org/download/#nix-install-linux) for updated commands)
+```bash
+sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
+```
+
+Then run the following commands to start
+```bash
+nix-shell
+```
+
 ### Build the NEX repo
 1. Clone the NEX repo then initialize submodules.
 ```
@@ -54,6 +66,7 @@ make -j
 make dsim -j
 ```
 5. Install NEX so you can use it in other directories
+(If you use nix env, you don't need to install, skip the following command)
 ```
 sudo make install
 ```

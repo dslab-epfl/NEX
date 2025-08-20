@@ -55,7 +55,8 @@ uintptr_t open_shm_for_nex(const char* shm_path) {
         close(fd);
         exit(EXIT_FAILURE);
     }
-    printf("%s sb.st_size: %ld\n", shm_path, sb.st_size);
+
+    // printf("%s sb.st_size: %ld\n", shm_path, sb.st_size);
     size_t region_size = sb.st_size;
     if (region_size == 0) {
         fprintf(stderr, "Error: Shared memory region size is 0.\n");
@@ -71,7 +72,7 @@ uintptr_t open_shm_for_nex(const char* shm_path) {
         exit(EXIT_FAILURE);
     }
     
-    printf("Memory mapped at address %p, size %zu bytes.\n", mmap_base, region_size);
+    // printf("Memory mapped at address %p, size %zu bytes.\n", mmap_base, region_size);
     
     // The mapping remains valid even after closing fd.
     close(fd);
@@ -112,7 +113,7 @@ __attribute__((constructor)) static void accvm_init(void) {
   }
   
   // clean up everything 
-  printf("LD_PRELOAD\n");
+  printf("LD_PRELOADED NEX Library \n");
   sys_up_time = get_real_ts();
 }
 

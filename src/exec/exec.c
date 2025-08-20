@@ -59,7 +59,7 @@ void *poll_trace_eventq(void *arg) {
 
 int create_smem(const char *shm_name, int size, int init) {
     int shm_fd;
-    printf("init %s\n", shm_name);
+    safe_printf("init %s\n", shm_name);
     if (init == 0) {
         shm_fd = shm_open(shm_name, O_RDWR, 0666);
         DEBUG("Open/not create %s shm_fd %d\n", shm_name, shm_fd);
@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    printf("Starting NEX with CONFIG_EXTRA_COST_TIME %d", CONFIG_EXTRA_COST_TIME);
+    safe_printf("Starting NEX with CONFIG_EXTRA_COST_TIME %d", CONFIG_EXTRA_COST_TIME);
 
     init(0);  
 
