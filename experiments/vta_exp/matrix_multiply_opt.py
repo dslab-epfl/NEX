@@ -371,7 +371,9 @@ res_ref = res_ref.reshape(
 # Get an environment variable
 clock_id = 999
 if clock_id == 999:
-    nex_lib = ctypes.CDLL('/home/jiacma/vta_exp/libnex_tick.so')
+    # get env variable
+    nex_home = os.environ.get("NEX_HOME")
+    nex_lib = ctypes.CDLL(f'{nex_home}/experiments/vta_exp/libnex_tick.so')
     shm_name = "/nex_mmio_regions"  # Must include the leading slash
     shm = shared_memory.SharedMemory(name=shm_name)
     buf = shm.buf

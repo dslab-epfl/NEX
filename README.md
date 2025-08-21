@@ -23,6 +23,27 @@ NEX supports time-warp features that let users manipulate timestamps in the appl
 ![NEX Architecture](figs/nex-archi.svg)
 
 ## Building
+<!-- 
+### (Using a virtual machine)
+If you'd like to run nex inside a virtual machine, you can do the following steps (note, nex will be slower inside a virtual machine).
+```bash
+cd virtual-machine
+./download_vm.sh
+tmux new-session -d -s nex-vm-noble "sudo ./launch.sh"
+```
+
+Use the following to log into the virtual machine.
+```bash
+./login_vm.sh
+```
+
+Finally, clone nex then install packages inside the vm
+```bash
+cd virtual-machine
+./install_inside_vm.sh
+``` 
+
+Note, when doing `make autoconfig`, you should use `make autoconfig_vm` which search configs within a different range, this is mainly due to different latency of local timer interrupts when the kernel runs inside a vm or not. If you don't find a config using `make autoconfig_vm`; adjust the last two or three parameters in `./test/autoconfig.sh $(CONFIG_PROJECT_PATH) <tolerance of error> <lowerbound> <upperbound>` -->
 
 ### Installing the Kernel
 Install kernels that have SCX support, check [SCX](https://github.com/sched-ext/scx) repo for installation guide.
@@ -35,9 +56,18 @@ $ sudo apt install -y linux-generic-wip scx
 $ sudo reboot
 ```
 
+The above may be outdated, if so, try the following
+```
+$ sudo add-apt-repository -y --enable-source ppa:arighi/sched-ext
+$ sudo apt upgrade
+$ sudo reboot
+```
+
+
 ### (Nix Env)
 You can optionally install nix and use the prepared environments
-install nix with one command (check [here](https://nixos.org/download/#nix-install-linux) for updated commands)
+
+Install nix with only one command (check [here](https://nixos.org/download/#nix-install-linux) for updated commands)
 ```bash
 sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
 ```
@@ -52,7 +82,7 @@ nix-shell
 ```
 git submodule update --init --recursive
 ```
-2. Make scx 
+2. Make scx (if encounter errors and you are in nix-shell, exit nix-shell and try again)
 ```
 sudo make scx -j
 ```
@@ -66,7 +96,6 @@ make -j
 make dsim -j
 ```
 5. Install NEX so you can use it in other directories
-(If you use nix env, you don't need to install, skip the following command)
 ```
 sudo make install
 ```
@@ -147,12 +176,17 @@ This script will print `Verification (first few updated files)` at the end, plea
 
 ### VTA
 Install environment first (note: you might need to fix environment issues manually, as noted in the build-tvm.sh).
+If you didn't use nix-shell, please run mannually `export NEX_HOME=<nex_path>`, one experiment needs this environment variable.
+
 ```bash
 cd experiments/
 ./build-tvm.sh
 cd vta_exp/
 ./run_all.sh
 ``` 
+
+Note, when running `./build-tvm.sh` if you have enough memory, you can increase the number after `make -j` to speedup build.
+
 ### JPEG
 ```bash
 cd jpeg_exp/

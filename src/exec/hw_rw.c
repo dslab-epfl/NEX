@@ -391,8 +391,7 @@ void* eager_sync_accelerator_manager(void* args){
       simbricks_advance_rtl(NULL, evnt_from_kernel.ts, false);  
       evnt.ts = evnt_from_kernel.ts;
       put_bpf_map(from_nex_runtime_event_q_fd, NULL, &evnt, BPF_MAP_UPDATE);
-
-      trigger_application_interrupt(jpeg_array[0]->pid);
+      // trigger_application_interrupt(jpeg_array[0]->pid);
     }
     sched_yield();
   }

@@ -85,7 +85,7 @@ menu "Accelerator Interactive Mode"
     
     config EAGER_SYNC
         bool "turn on eager synchronization" 
-        default y 
+        default n 
         help 
             Turn on eager synchronization to support interrupts
         

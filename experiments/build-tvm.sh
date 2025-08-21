@@ -36,7 +36,7 @@ mkdir build
 cp cmake/config.cmake build
 cd build
 cmake ..
-make -j
+make -j8
 
 cd $CUR_DIR/vta_exp
 ./install_classify.sh
