@@ -1,10 +1,10 @@
 #!/bin/bash
-# CUR_DIR=$(pwd)
+CUR_DIR=$(pwd)
 # source $CUR_DIR/../tvm-vta-env/bin/activate
 # export TVM_PATH=$PWD/../simbricks-tvm
 # export VTA_HW_PATH=$TVM_PATH/3rdparty/vta-hw
 # export PYTHONPATH=$TVM_PATH/python:$TVM_PATH/vta/python:$PYTHONPATH
-MXNET_HOME=/tmp/mxnet
+MXNET_HOME=$CUR_DIR/mxnet
 mkdir -p $MXNET_HOME
 cp -r mxnet_tar/* $MXNET_HOME
 

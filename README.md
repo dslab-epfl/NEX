@@ -23,7 +23,7 @@ NEX supports time-warp features that let users manipulate timestamps in the appl
 ![NEX Architecture](figs/nex-archi.svg)
 
 ## Building
-<!-- 
+
 ### (Using a virtual machine)
 If you'd like to run nex inside a virtual machine, you can do the following steps (note, nex will be slower inside a virtual machine).
 ```bash
@@ -31,6 +31,8 @@ cd virtual-machine
 ./download_vm.sh
 tmux new-session -d -s nex-vm-noble "sudo ./launch.sh"
 ```
+
+Note, if your machine has multiple sockets, it's better/important to try to use one socket if that has enough cores and use taskset to pin qemu onto those cores. Otherwise, nex when running inside qemu may get too slow, and the kernel will kill nex automatically and the experiments hangs.
 
 Use the following to log into the virtual machine.
 ```bash
@@ -43,7 +45,7 @@ cd virtual-machine
 ./install_inside_vm.sh
 ``` 
 
-Note, when doing `make autoconfig`, you should use `make autoconfig_vm` which search configs within a different range, this is mainly due to different latency of local timer interrupts when the kernel runs inside a vm or not. If you don't find a config using `make autoconfig_vm`; adjust the last two or three parameters in `./test/autoconfig.sh $(CONFIG_PROJECT_PATH) <tolerance of error> <lowerbound> <upperbound>` -->
+Note, when doing `make autoconfig`, you should use `make autoconfig_vm` which search configs within a different range, this is mainly due to different latency of local timer interrupts when the kernel runs inside a vm or not. If you don't find a config using `make autoconfig_vm`; adjust the last two or three parameters in `./test/autoconfig.sh $(CONFIG_PROJECT_PATH) <tolerance of error> <lowerbound> <upperbound>`
 
 ### Installing the Kernel
 Install kernels that have SCX support, check [SCX](https://github.com/sched-ext/scx) repo for installation guide.
@@ -163,7 +165,7 @@ Prepared experiments are available in `experiments/`:
 You only need to enter the following 3 configs.
 
 - **TOTAL_CORES**
-- **SIM_CORES**: leave 16 cores at least
+- **SIM_CORES**: leave 8-16 cores at least
 - **EXTRA_COST_TIME**
 
 Then run the following to update experiments settings

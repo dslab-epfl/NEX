@@ -22,9 +22,10 @@ done
 sleep 30
 python3 -m tvm.exec.query_rpc_tracker --host $RPC_TRACKER_IP --port 9091  > $2 2>&1
 
-MXNET_HOME=/tmp/mxnet
+MXNET_HOME=$NEX_HOME/experiments/vta_exp/mxnet
 
-taskset -c 0-14:2 python3 multi_classification-infer.py $MXNET_HOME vta resnet18_v1 cat.png 1 1 0 0 $1 >> $2 2>&1
+# taskset -c 0-14:2 python3 multi_classification-infer.py $MXNET_HOME vta resnet18_v1 cat.png 1 1 0 0 $1 >> $2 2>&1
+taskset -c 0-7 python3 multi_classification-infer.py $MXNET_HOME vta resnet18_v1 cat.png 1 1 0 0 $1 >> $2 2>&1
 
 for pid in "${PIDS[@]}"; do
     kill -9 $pid 2>/dev/null

@@ -1,6 +1,7 @@
 export MODEL_NAME=yolov3-tiny
 export REPO_URL=https://github.com/dmlc/web-data/blob/main/darknet/
-export DARKNET_DIR=/tmp/darknet
+CUR_DIR=$(pwd)
+export DARKNET_DIR=$CUR_DIR/darknet
 mkdir -p $DARKNET_DIR
 cd $DARKNET_DIR
 wget -O ${MODEL_NAME}.cfg https://github.com/pjreddie/darknet/blob/master/cfg/${MODEL_NAME}.cfg?raw=true
