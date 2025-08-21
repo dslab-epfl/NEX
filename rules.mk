@@ -102,7 +102,7 @@ $(SHARED_LIB): $(ACCVM_ALL) config.mk
 # SCX scheduler build
 scx:
 	cd external/scx/ && meson setup --reconfigure build --prefix ~ -Denable_rust=false
-	systemctl stop scx.service
+	systemctl stop scx.service || true
 ifeq ($(CONFIG_STOP_WORLD_MODE), 1)
 	cp scx/scx_simple.bpf.ipi.c external/scx/scheds/c/scx_simple.bpf.c
 endif
@@ -147,11 +147,16 @@ compile_matmul:
 	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
 
 test_matmul:
-	./nex ./test/nex.matmul
+	@echo "pwd: $(shell pwd)"
+	sudo ./nex ./test/nex.matmul
 
 autoconfig:
 	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
 	./test/autoconfig.sh $(CONFIG_PROJECT_PATH) 3 700 1000
 
+
+autoconfig_vm:
+	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
+	./test/autoconfig.sh $(CONFIG_PROJECT_PATH) 5 2000 3000
 
 .PHONY: all clean scx test_jpeg menuconfig install dsim
