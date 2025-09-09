@@ -484,7 +484,7 @@ static inline void inc_vts(u64 time){
     }
 }
 
-static inline u64 reset_vts(){
+static inline void reset_vts(){
     u32 index = 0;
     u64* vts_ptr = bpf_map_lookup_elem(&vts, &index);
     if(vts_ptr){
@@ -620,17 +620,23 @@ struct ctx {
     struct task_struct *p;
     u32 *min_cpu_ptr;
     u64 *core_cnt;
+    bool sim_core_only;
 };
 
 // Callback function
 static long callback(u32 index, void *ctx) {
 
-        if(index < SIM_CORE_START){
-            return 0;
-        }
+        struct ctx *args = ctx;  // Cast context to ctx struct
+        bool sim_core_only = args->sim_core_only;
+         // If sim_core_only is true, only consider SIM cores
+        if (sim_core_only) {
+            if(index < SIM_CORE_START){
+                return 0;
+            }
 
-        if(index >= SIM_CORE_END){
-            return 1;
+            if(index >= SIM_CORE_END){
+                return 1;
+            }
         }
         
         u32 pcpu = VIRT_CPU_TO_PHY(index);
@@ -639,7 +645,7 @@ static long callback(u32 index, void *ctx) {
             return 1;
         }
 
-        struct ctx *args = ctx;  // Cast context to ctx struct
+       
         struct task_struct *p = args->p;
         u32 *min_cpu_ptr = args->min_cpu_ptr;
         u32 min_cpu = *min_cpu_ptr;
@@ -679,7 +685,7 @@ static long callback(u32 index, void *ctx) {
 /*
     Calculate the pinned cpu for a task
 */
-static u32 calc_cpu_balanced(struct task_struct *p, int old_cpu) {
+static u32 calc_cpu_balanced(struct task_struct *p, int old_cpu, bool sim_core_only) {
     u32 min_cpu = 1000;
     if(bpf_cpumask_test_cpu(old_cpu, p->cpus_ptr)){
         min_cpu = old_cpu;
@@ -688,6 +694,7 @@ static u32 calc_cpu_balanced(struct task_struct *p, int old_cpu) {
         .p = p,
         .min_cpu_ptr = &min_cpu,
         .core_cnt = pin_core_cnt,
+        .sim_core_only = sim_core_only
     };
     bpf_loop(MAX_CORES, callback, &context, 0);
 
@@ -698,8 +705,12 @@ static u32 calc_cpu_balanced(struct task_struct *p, int old_cpu) {
             ATOMIC_MINUS_ONE(pin_core_cnt[old_cpu]);
         }
     } else {
-        DEBUG_PRINT("No valid CPU found for PID %d, min_cpu %d, old_cpu %d\n", p->pid, min_cpu, old_cpu);
+        bpf_printk("No valid CPU found for PID %d, min_cpu %d, old_cpu %d, mask %p\n", p->pid, min_cpu, old_cpu, p->cpus_ptr);
     }
+
+    // if(min_cpu != old_cpu){
+    //     bpf_printk("PID %d migrate from %d to %d\n", p->pid, old_cpu, min_cpu);
+    // }
     return min_cpu;
 }
 
@@ -854,8 +865,10 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
         ){
             // DEBUG_PRINT("<enqueue>CPU %d is not in the cpumask of PID %d\n", p->pid, pin_cpu);
             u32 old_cpu = pin_cpu;
-            pin_cpu = calc_cpu_balanced(p, pin_cpu);
-            scx_bpf_kick_cpu(pin_cpu, SCX_KICK_IDLE);
+            pin_cpu = calc_cpu_balanced(p, pin_cpu, 1);
+            if(pin_cpu <= NR_CORES){
+                scx_bpf_kick_cpu(pin_cpu, SCX_KICK_IDLE);
+            }
             // if(old_cpu != pin_cpu){
             //    DEBUG_PRINT("move from CPU %d to new CPU %d for PID %d\n", old_cpu, pin_cpu, p->pid);
             // }
@@ -866,6 +879,20 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
         if(state_ptr){
             state_ptr->sim_state = sim_state;
             state_ptr->pin_cpu = pin_cpu;
+            if(pin_cpu == 1000){
+                bpf_printk("the pin_cpu is invalid, but I will keep running ... but moving this process %d out of my control forever %d\n", p->pid);
+               
+                u32 index = (u32)p->pid;
+                // delete this index from the map
+                bpf_map_delete_elem(&sim_proc_state, &index);
+                if(enq_q == Q1){
+                    atomic_dec_f1_dec_f2(TOTAL_CNT_SHIFT, Q1_CNT_SHIFT);
+                }else if(enq_q == Q2){
+                    atomic_dec_f1_dec_f2(TOTAL_CNT_SHIFT, Q2_CNT_SHIFT);
+                }
+                scx_bpf_dispatch(p, OTHER_DSQ_CONFLICT, NORMAL_QUANTUM+EXTRA_COST_TIME, enq_flags);
+                return;
+            }
         }
 
         if(run_state != 2){
@@ -1013,7 +1040,7 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
                 sim_state = enq_q << 8 | 0x00;
                 // the task may not be able to run on the old cpu
                 if(!bpf_cpumask_test_cpu(pin_cpu, p->cpus_ptr)){
-                    pin_cpu = calc_cpu_balanced(p, pin_cpu);
+                    pin_cpu = calc_cpu_balanced(p, pin_cpu, 1);
                     scx_bpf_kick_cpu(pin_cpu, SCX_KICK_IDLE);
                 }
 
@@ -1087,36 +1114,29 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
     }
 
     u32 consume_q_copy = consume_q;
+
+    int ret = 0;
+
     if(on_off == 0){
         scx_bpf_consume(cpu*2+START_Q+Q1+Q2-consume_q_copy-1);
         scx_bpf_consume(cpu*2+START_Q+consume_q_copy-1);
         u32 dsq = SHARED_DSQ+consume_q_copy-1;
-        int ret = scx_bpf_consume(dsq);
-        if(ret == 0){
-            ret = scx_bpf_consume(OTHER_DSQ_CONFLICT);
-            // if(ret == 0){
-            //     // no work
-            //     KICK_ME_AND_RETURN;
-            // }
-        }else{
-            return;
-        }
+        ret = scx_bpf_consume(dsq);
     }else{
         // for savety, consume the shared queue first
         scx_bpf_consume(SHARED_DSQ+Q1+Q2-consume_q_copy-1);
         scx_bpf_consume(SHARED_DSQ+consume_q_copy-1);
         u32 dsq = cpu*2+START_Q+consume_q_copy-1;
-        int ret = scx_bpf_consume(dsq);
-        if(ret == 0){
-            ret = scx_bpf_consume(OTHER_DSQ_CONFLICT);
-            // if(ret == 0){
-            //     // no work
-            //     KICK_ME_AND_RETURN;
-            // }
-        }else{
-            return;
-        }
+        ret = scx_bpf_consume(dsq);
     }
+
+    if(ret == 0){
+        scx_bpf_consume(OTHER_DSQ_CONFLICT);
+    }
+    
+    // else{
+    //     return;
+    // }
     
     // only enters here if the Q1 or Q2 is empty
 
@@ -1451,13 +1471,9 @@ void BPF_STRUCT_OPS(simple_runnable, struct task_struct *p, u64 enq_flags){
 #define SCHED_EXT 7   /* matches kernel definition */
 #endif
 
-#ifndef SCHED_RESET_ON_FORK
-#define SCHED_RESET_ON_FORK 0x40000000u
-#endif
-
 static __always_inline int base_policy(int pol)
 {
-    return pol & ~SCHED_RESET_ON_FORK;
+    return pol & 0xF;
 }
 
 void BPF_STRUCT_OPS(simple_enable, struct task_struct *p)
@@ -1475,7 +1491,12 @@ void BPF_STRUCT_OPS(simple_enable, struct task_struct *p)
 
     u32 index = (u32)p->pid;
     if(is_target_pid == 1){
-        u32 cpu = calc_cpu_balanced(p, -1); 
+        u32 cpu = calc_cpu_balanced(p, -1, 1); 
+        if(cpu == 1000){
+            bpf_printk("The pin_cpu is invalid at Enable, I will move this process %d out of my control forever %d\n", p->pid, cpu);
+            return;
+        }
+
         // DEBUG_PRINT("%d ENABLE @init_cpu %d\n", p->pid, cpu);
         bpf_printk("Enable Target PID %d, init_cpu %d\n", p->pid, cpu);
         #define INIT 255
@@ -1486,6 +1507,7 @@ void BPF_STRUCT_OPS(simple_enable, struct task_struct *p)
         state.reversed_priority = MAX_PRIORITY;
         state.ctrl_msg = 0;
         state.jailbreak = 0;
+        state.epoch_dur = 0;
         bpf_map_update_elem(&sim_proc_state, &index, &state, BPF_ANY);
     }
 }
@@ -1546,6 +1568,7 @@ s32 BPF_STRUCT_OPS_SLEEPABLE(simple_init)
         // q2 number is i*2+START_Q + Q2 - 1
         ret = ret | scx_bpf_create_dsq(i*2+START_Q+Q1-1, -1);
         ret = ret | scx_bpf_create_dsq(i*2+START_Q+Q2-1, -1);
+        pin_core_cnt[i] = 0;
     }
 
     consume_q = Q1;
