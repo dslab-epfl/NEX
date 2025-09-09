@@ -1,0 +1,40 @@
+<system version="1">
+  <!-- Single CPU with two GPUs representing two virtual nodes -->
+  <cpu numaid="0" affinity="00000000,ffffffff,00000000,ffffffff" arch="x86_64" vendor="GenuineIntel" familyid="6" modelid="106">
+    <!-- TAP interface for inter-node communication -->
+    <pci busid="0000:06:00.0" class="0x020000" vendor="0x15b3" device="0x101d" subsystem_vendor="0x15b3" subsystem_device="0x0064" link_speed="16 GT/s" link_width="16">
+      <nic>
+        <net name="tap-nccl-0" dev="0" speed="10000" port="1" latency="0.000010" guid="0x1e95b50003fd7010" maxconn="262144" gdr="0"/>
+      </nic>
+    </pci>
+    <pci busid="0000:1a:00.0" class="0x020000" vendor="0x15b3" device="0x101d" subsystem_vendor="0x15b3" subsystem_device="0x0064" link_speed="16 GT/s" link_width="16">
+      <nic>
+        <net name="tap-nccl-1" dev="1" speed="10000" port="1" latency="0.000010" guid="0x4280b50003fd7010" maxconn="262144" gdr="0"/>
+      </nic>
+    </pci>
+    
+    <!-- GPU 0 (represents Node 0) -->
+    <pci busid="0000:0c:00.0" class="0x060400" vendor="0x1000" device="0xc010" subsystem_vendor="0x1000" subsystem_device="0xa096" link_speed="16 GT/s" link_width="16">
+      <pci busid="0000:0e:00.0" class="0x060400" vendor="0x1000" device="0xc010" subsystem_vendor="0x1000" subsystem_device="0xa096" link_speed="16 GT/s" link_width="16">
+        <pci busid="0000:11:00.0" class="0x060400" vendor="0x1000" device="0xc010" subsystem_vendor="0x10de" subsystem_device="0x13b8" link_speed="16 GT/s" link_width="16">
+          <pci busid="0000:13:00.0" class="0x030200" vendor="0x10de" device="0x20b2" subsystem_vendor="0x10de" subsystem_device="0x1463" link_speed="16 GT/s" link_width="16">
+            <gpu dev="0" sm="80" rank="0" gdr="0">
+              <!-- No direct links to other GPUs - communication via network -->
+            </gpu>
+          </pci>
+        </pci>
+      </pci>
+    </pci>
+    
+    <!-- GPU 1 (represents Node 1) -->
+    <pci busid="0000:15:00.0" class="0x060400" vendor="0x1000" device="0xc010" subsystem_vendor="0x1000" subsystem_device="0xa096" link_speed="16 GT/s" link_width="16">
+      <pci busid="0000:17:00.0" class="0x060400" vendor="0x1000" device="0xc010" subsystem_vendor="0x10de" subsystem_device="0x13b8" link_speed="16 GT/s" link_width="16">
+        <pci busid="0000:19:00.0" class="0x030200" vendor="0x10de" device="0x20b2" subsystem_vendor="0x10de" subsystem_device="0x1463" link_speed="16 GT/s" link_width="16">
+          <gpu dev="1" sm="80" rank="1" gdr="0">
+            <!-- No direct links to other GPUs - communication via network -->
+          </gpu>
+        </pci>
+      </pci>
+    </pci>
+  </cpu>
+</system>

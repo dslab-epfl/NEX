@@ -1,6 +1,5 @@
 #include <scx/common.bpf.h>
 
-
 // please set this manually, due to bpf static analysis
 #define MAX_CORES 48
 
@@ -699,7 +698,7 @@ static u32 calc_cpu_balanced(struct task_struct *p, int old_cpu) {
             ATOMIC_MINUS_ONE(pin_core_cnt[old_cpu]);
         }
     } else {
-        // DEBUG_PRINT("No valid CPU found for PID %d\n", p->pid);
+        DEBUG_PRINT("No valid CPU found for PID %d, min_cpu %d, old_cpu %d\n", p->pid, min_cpu, old_cpu);
     }
     return min_cpu;
 }
@@ -783,7 +782,11 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
         u32 pin_cpu = 0;
         u64 quantum = DYN_TIME_QUANTUM_TO_USE + EXTRA_COST_TIME;
         u32 priority = 0;
+        u32 ctrl_msg = 0;
         if(state_ptr){
+            ctrl_msg = state_ptr->ctrl_msg;
+            state_ptr->ctrl_msg = 0;
+
             sim_state = state_ptr->sim_state;
             pin_cpu = state_ptr->pin_cpu;
             if(state_ptr->epoch_dur > 0){
@@ -791,6 +794,19 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
             }
             priority = state_ptr->reversed_priority & 0xFFFFFFFF;
         }
+
+        // if(ctrl_msg == 0xFFFF){
+        //     // exit control forever
+        //     if(state_ptr){
+        //         bpf_printk("PID %d exit control forever, sim_state %p\n", p->pid, state_ptr->sim_state);
+        //         state_ptr->jailbreak = true;
+        //         state_ptr->sim_state = 0;
+        //         state_ptr->pin_cpu = 0;
+        //     }
+        //     scx_bpf_dispatch(p, OTHER_DSQ_CONFLICT, NORMAL_QUANTUM+EXTRA_COST_TIME, enq_flags);
+        //     return;
+        // }
+
         u32 run_state = sim_state & 0xFF;
         u32 prev_q = (sim_state & 0xFF00) >> 8;
         u32 enq_q = 0;
@@ -925,6 +941,7 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
                     // marker to jail break current thread
                     // but other threads can still run
                     if(state_ptr){
+                        bpf_printk("True jailbreak pid %d\n", p->pid);
                         state_ptr->jailbreak = true;
                     }
                     dec_traced_cnt = 1;
@@ -1430,13 +1447,37 @@ void BPF_STRUCT_OPS(simple_runnable, struct task_struct *p, u64 enq_flags){
 #endif
 }
 
+#ifndef SCHED_EXT
+#define SCHED_EXT 7   /* matches kernel definition */
+#endif
+
+#ifndef SCHED_RESET_ON_FORK
+#define SCHED_RESET_ON_FORK 0x40000000u
+#endif
+
+static __always_inline int base_policy(int pol)
+{
+    return pol & ~SCHED_RESET_ON_FORK;
+}
+
 void BPF_STRUCT_OPS(simple_enable, struct task_struct *p)
 {
-    bool is_target_pid = target_pid_from_userland_init(p);
+    int pol = 0;
+    // bool is_target_pid = target_pid_from_userland_init(p);
+    pol = BPF_CORE_READ(p, policy);
+
+    pol = base_policy(pol);
+    bool is_target_pid = 0;
+
+    if (pol == SCHED_EXT) {
+        is_target_pid = 1;
+    }
+
     u32 index = (u32)p->pid;
     if(is_target_pid == 1){
         u32 cpu = calc_cpu_balanced(p, -1); 
-        DEBUG_PRINT("%d ENABLE @init_cpu %d\n", p->pid, cpu);
+        // DEBUG_PRINT("%d ENABLE @init_cpu %d\n", p->pid, cpu);
+        bpf_printk("Enable Target PID %d, init_cpu %d\n", p->pid, cpu);
         #define INIT 255
         // u64 sim_state = INIT;
         struct pstate state;

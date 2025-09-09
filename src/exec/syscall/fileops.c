@@ -20,7 +20,7 @@ int get_syscall_entry_real_time_map_fd() {
 
 
 void handle_fsync_entry(int waited_child) {
-    syscall_entry_time_map_fd = get_syscall_entry_real_time_map_fd(); 
+    int syscall_entry_time_map_fd = get_syscall_entry_real_time_map_fd(); 
     uint64_t curr_vts = read_vts();
 
     modify_thread_halt_time(waited_child, curr_vts);
@@ -47,7 +47,7 @@ bool check_and_handle_fsync_exit(int waited_child) {
     clock_gettime(CLOCK_MONOTONIC, &real_ts2);
     uint64_t real_ts1, real_ts2_in_ns = real_ts2.tv_sec * (1e9) + real_ts2.tv_nsec;
 
-    syscall_entry_time_map_fd = get_syscall_entry_real_time_map_fd();
+    int syscall_entry_time_map_fd = get_syscall_entry_real_time_map_fd();
     int ret = put_bpf_map(syscall_entry_time_map_fd, &waited_child, &real_ts1, BPF_MAP_LOOKUP_DELETE);
     if(ret == 0) {
         uint64_t fsync_time = real_ts2_in_ns - real_ts1 - 500000; // correction factor 500us, to account for the time between actual fsync exit and ts calculation in this function

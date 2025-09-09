@@ -1,0 +1,21 @@
+<system version="1">
+  <!-- Node 0: CPU + GPU + TAP interface -->
+  <cpu numaid="0" affinity="00000000,ffffffff,00000000,ffffffff" arch="x86_64" vendor="GenuineIntel" familyid="6" modelid="106" host_hash="0x10bb0415bdc6827e">
+    <pci busid="0000:13:00.0" class="0x030200" vendor="0x10de" device="0x20b2" subsystem_vendor="0x10de" subsystem_device="0x1463" link_speed="16 GT/s" link_width="16">
+      <gpu dev="0" sm="80" rank="0" gdr="0"/>
+    </pci>
+    <nic>
+      <net name="tap-nccl-0" dev="0" speed="10000" port="1" latency="0.001000" guid="0x000000000001" maxconn="64" gdr="0" coll="0"/>
+    </nic>
+  </cpu>
+
+  <!-- Node 1: CPU + GPU + TAP interface -->
+  <cpu numaid="1" affinity="ffffffff,00000000,ffffffff,00000000" arch="x86_64" vendor="GenuineIntel" familyid="6" modelid="106" host_hash="0x10bb0415bdc6827e">
+    <pci busid="0000:19:00.0" class="0x030200" vendor="0x10de" device="0x20b2" subsystem_vendor="0x10de" subsystem_device="0x1463" link_speed="16 GT/s" link_width="16">
+      <gpu dev="1" sm="80" rank="1" gdr="0"/>
+    </pci>
+    <nic>
+      <net name="tap-nccl-1" dev="1" speed="10000" port="2" latency="0.001000" guid="0x000000000002" maxconn="64" gdr="0" coll="0"/>
+    </nic>
+  </cpu>
+</system>

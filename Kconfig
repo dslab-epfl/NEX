@@ -170,6 +170,16 @@ menu "Host mem/pcie simulation"
 
 endmenu
 
+
+menu "GPU Simulation Configuration"
+    config GPU
+        bool "Enable GPU"
+        default n
+    help
+        Enable GPU support in the simulation environment
+endmenu
+
+
 choice
     prompt "VTA"
     config VTA_DSIM
@@ -236,7 +246,6 @@ choice
     endmenu
 
 endchoice 
-
 
 choice
     prompt "Protoacc"

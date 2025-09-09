@@ -26,21 +26,25 @@ static int fds[5];
 int nex_pid = 0;
 int sim_end = 0;
 uint64_t sys_up_time;
-int syscall_entry_time_map_fd;
-int trace_evnt_fd; 
+int eager_sync_stop;
+void *mmio_base;
+
 int from_nex_runtime_event_q_fd;
 int to_nex_runtime_event_q_fd;
 int sim_proc_state_fd;
-int vts_fd;
+int trace_event_q_fd;
 int bpf_sched_ctrl_fd;
-int eager_sync_stop;
-void *mmio_base;
+int syscall_entry_real_time_map_fd;
 int thread_state_map_fd;
+int event_q_fd;
+int vts_fd;
+
+extern void bpf_sched_update_state_per_pid(uint32_t ctrl_pid, uint32_t ctrl_msg);
 
 void *poll_trace_eventq(void *arg) {
     // while (1) {
     //     struct trace_evnt evnt;
-    //     if(put_bpf_map(trace_evnt_fd, NULL, &evnt, BPF_MAP_LOOKUP_DELETE) == 0){
+    //     if(put_bpf_map(trace_event_q_fd, NULL, &evnt, BPF_MAP_LOOKUP_DELETE) == 0){
     //         // safe_printf("calling ptrace bpf peek for pid: , vts: %lu via process: %d\n", read_vts(), getppid());
     //         char buf[100];
     //         int len = snprintf(buf, sizeof(buf), "%d,%lu,%lu\n", evnt.type, evnt.ts, evnt.data);
@@ -98,7 +102,7 @@ void* init_mmio_region(const char *shm_name, int size, int init, int* fd){
 }
 
 void init(int host_id){
-  sprintf(mmio_shm_name, "/nex_mmio_regions");
+  sprintf(mmio_shm_name, "nex_mmio_regions");
   mmio_base = init_mmio_region(mmio_shm_name, MMIO_SIZE, 1, &fds[0]);
   hw_init();
 }
@@ -185,24 +189,25 @@ install_crash_handler(void)
 }
 
 int main(int argc, char *argv[]) {
-    // autotuning phrase
-    nex_pid = getpid();
-
-    #if CONFIG_ENABLE_BPF
-    if (CONFIG_EXTRA_COST_TIME == 0){
-        printf("Run \"make autoconfig\" first to configure CONFIG_EXTRA_COST_TIME\n");
-        exit(0);
-    }
-    #endif
-
-
-    uint64_t start_ts, end_ts;
+    
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <program> [args...]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    safe_printf("Starting NEX with CONFIG_EXTRA_COST_TIME %d", CONFIG_EXTRA_COST_TIME);
+    nex_pid = getpid();
+
+    #if CONFIG_ENABLE_BPF
+    map_bpf();
+    #endif
+
+    struct sched_param sp = { .sched_priority = 0 };
+    // child inherent the scheduling policy
+    sched_setscheduler(nex_pid, SCHED_EXT, &sp);
+
+    printf("NEX exec running (set SCHED_EXT for all my child). Will launch %s\n", argv[1]);
+
+    uint64_t start_ts, end_ts;
 
     init(0);  
 
@@ -213,103 +218,97 @@ int main(int argc, char *argv[]) {
     pthread_t eager_sync_thread_id;
     if(dp==0) {
         raise(SIGSTOP);
-        int child = fork();
-        if (child == 0) {
             // Child process: the tracee
-            safe_printf("Tracee pid: %d\n", getpid());
+        safe_printf("Tracee pid: %d\n", getpid());
 
-            #define INTERCEPT_SYSCALL(name) \
-                BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_##name, 0, 1), \
-                BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE), \
-                BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
+        #define INTERCEPT_SYSCALL(name) \
+            BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_##name, 0, 1), \
+            BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE), \
+            BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
 
-            // struct sock_filter filter[] = {
-            //     BPF_STMT(BPF_LD+BPF_W+BPF_ABS, offsetof(struct seccomp_data, nr)),
-            //     // INTERCEPT_SYSCALL(sendto),
-            //     // INTERCEPT_SYSCALL(fsync),
-            //     INTERCEPT_SYSCALL(clock_gettime),
-            //     // INTERCEPT_SYSCALL(gettimeofday),
-            //     // INTERCEPT_SYSCALL(nanosleep),
-            // };
-            // struct sock_fprog prog = {
-            //     .filter = filter,
-            //     .len = (unsigned short)(sizeof(filter) / sizeof(filter[0])),
-            // };
+        // struct sock_filter filter[] = {
+        //     BPF_STMT(BPF_LD+BPF_W+BPF_ABS, offsetof(struct seccomp_data, nr)),
+        //     // INTERCEPT_SYSCALL(sendto),
+        //     // INTERCEPT_SYSCALL(fsync),
+        //     INTERCEPT_SYSCALL(clock_gettime),
+        //     // INTERCEPT_SYSCALL(gettimeofday),
+        //     // INTERCEPT_SYSCALL(nanosleep),
+        // };
+        // struct sock_fprog prog = {
+        //     .filter = filter,
+        //     .len = (unsigned short)(sizeof(filter) / sizeof(filter[0])),
+        // };
 
-            // /* To avoid the need for CAP_SYS_ADMIN */
-            // if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
-            //     perror("prctl(PR_SET_NO_NEW_PRIVS)");
-            //     return 1;
-            // }
+        // /* To avoid the need for CAP_SYS_ADMIN */
+        // if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
+        //     perror("prctl(PR_SET_NO_NEW_PRIVS)");
+        //     return 1;
+        // }
 
-            // if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog) == -1) {
-            //     perror("when setting seccomp filter");
-            //     return 1;
-            // }
+        // if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog) == -1) {
+        //     perror("when setting seccomp filter");
+        //     return 1;
+        // }
 
-            // struct sched_param param;
-            // if (sched_setscheduler(getpid(), SCHED_EXT, &param) == -1) {
-            //     perror("sched_setscheduler");
-            //     return EXIT_FAILURE;
-            // }
-            
-            DEBUG_PRINT("Child, PID: %d\n", getpid());
-            int env_count = 0;
-            while (environ[env_count] != NULL) {
-                env_count++;
-            }
-            char **new_env = malloc((env_count + 4) * sizeof(char *));
-            if (new_env == NULL) {
-                perror("malloc failed");
-                return 1;
-            }
-            for (int i = 0; i < env_count; i++) {
-                new_env[i] = environ[i];
-            }
-
-            new_env[env_count] = malloc(200);
-            memset(new_env[env_count], 0, 200);
-            DEBUG_PRINT("CONFIG_PROJECT_PATH %s\n", CONFIG_PROJECT_PATH);
-            
-            char ld_preload_str[200] = "LD_PRELOAD=";
-            //append to the ld_preload string if cuda enabled 
-            #if CONFIG_ENABLE_CUDA
-                snprintf(ld_preload_str + strlen(ld_preload_str), 
-                        sizeof(ld_preload_str) - strlen(ld_preload_str), 
-                        "%s/%s", CONFIG_PROJECT_PATH, 
-                        "external/cuda_interpose/bin/cricket-client.so:");
-            #endif
-
-            #if CONFIG_ENABLE_BPF
-                snprintf(ld_preload_str + strlen(ld_preload_str), 
-                        sizeof(ld_preload_str) - strlen(ld_preload_str), 
-                        "%s/%s", CONFIG_PROJECT_PATH, 
-                        "src/accvm.so");
-            #endif
-
-            #if CONFIG_ENABLE_BPF || CONFIG_ENABLE_CUDA
-                strcpy(new_env[env_count], ld_preload_str);
-                safe_printf("LD_PRELOAD: %s\n", new_env[env_count]);
-            #endif
-
-            #if CONFIG_ENABLE_CUDA
-                new_env[env_count+1] = malloc(200);
-                sprintf(new_env[env_count+1], "REMOTE_GPU_ADDRESS=%s", CONFIG_CUDA_GPU_ADDRESS);
-                new_env[env_count+2] = malloc(200);
-                sprintf(new_env[env_count+2], "LD_LIBRARY_PATH=%s/%s:$LD_LIBRARY_PATH", CONFIG_PROJECT_PATH, "external/cuda_interpose/bin/");
-            #endif
-
-            set_mmio_to_user();
-            new_env[env_count+3] = NULL;
-            safe_printf("Child will exec %s\n", argv[1]);
-
-            execvpe(argv[1], argv + 1, new_env);
-            perror("execvpe");
-            return EXIT_FAILURE;
-        }else{
-            raise(SIGSTOP);
-            return 0;
+        // struct sched_param param;
+        // if (sched_setscheduler(getpid(), SCHED_EXT, &param) == -1) {
+        //     perror("sched_setscheduler");
+        //     return EXIT_FAILURE;
+        // }
+        
+        DEBUG_PRINT("Child, PID: %d\n", getpid());
+        int env_count = 0;
+        while (environ[env_count] != NULL) {
+            env_count++;
         }
+        char **new_env = malloc((env_count + 4) * sizeof(char *));
+        if (new_env == NULL) {
+            perror("malloc failed");
+            return 1;
+        }
+        for (int i = 0; i < env_count; i++) {
+            new_env[i] = environ[i];
+        }
+
+        new_env[env_count] = malloc(200);
+        memset(new_env[env_count], 0, 200);
+        DEBUG_PRINT("CONFIG_PROJECT_PATH %s\n", CONFIG_PROJECT_PATH);
+        
+        char ld_preload_str[200] = "LD_PRELOAD=";
+        //append to the ld_preload string if cuda enabled 
+        #if CONFIG_ENABLE_CUDA
+            snprintf(ld_preload_str + strlen(ld_preload_str), 
+                    sizeof(ld_preload_str) - strlen(ld_preload_str), 
+                    "%s/%s", CONFIG_PROJECT_PATH, 
+                    "external/cuda_interpose/bin/cricket-client.so:");
+        #endif
+
+        #if CONFIG_ENABLE_BPF
+            snprintf(ld_preload_str + strlen(ld_preload_str), 
+                    sizeof(ld_preload_str) - strlen(ld_preload_str), 
+                    "%s/%s", CONFIG_PROJECT_PATH, 
+                    "src/accvm.so");
+        #endif
+
+        #if CONFIG_ENABLE_BPF || CONFIG_ENABLE_CUDA
+            strcpy(new_env[env_count], ld_preload_str);
+            safe_printf("LD_PRELOAD: %s\n", new_env[env_count]);
+        #endif
+
+        #if CONFIG_ENABLE_CUDA
+            new_env[env_count+1] = malloc(200);
+            sprintf(new_env[env_count+1], "REMOTE_GPU_ADDRESS=%s", CONFIG_CUDA_GPU_ADDRESS);
+            new_env[env_count+2] = malloc(200);
+            sprintf(new_env[env_count+2], "LD_LIBRARY_PATH=%s/%s:$LD_LIBRARY_PATH", CONFIG_PROJECT_PATH, "external/cuda_interpose/bin/");
+        #endif
+
+        set_mmio_to_user();
+        new_env[env_count+3] = NULL;
+        safe_printf("Child will exec %s\n", argv[1]);
+
+        execvpe(argv[1], argv + 1, new_env);
+        perror("execvpe");
+        return EXIT_FAILURE;
     } else {
 
         int status;
@@ -327,33 +326,12 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        int w_cnt = 0;
-        while(w_cnt < 3){
-            int waited_pid = waitpid(-1, &status, __WALL);
-            w_cnt++;
-            if(waited_pid == dp){
-                if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP){
-                    ptrace(PTRACE_CONT, waited_pid, 0, 0);
-                }
-            }else{
-                tracee = waited_pid;
-                ptrace(PTRACE_CONT, tracee, 0, 0);
-            }
-        }
+        tracee = waited_pid;
 
-        assert(tracee != -1);
-
-        // stop for exec
+        // stop for exec, execvpe
         int ret = waitpid(tracee, &status, 0);
         assert(ret != -1);
         if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-            #if CONFIG_ENABLE_BPF
-            attach_bpf(dp, -1, -1);
-            eager_sync_stop = 0;
-            from_nex_runtime_event_q_fd = get_bpf_map("from_nex_runtime_event_q");
-            to_nex_runtime_event_q_fd = get_bpf_map("to_nex_runtime_event_q");
-            sim_proc_state_fd = get_bpf_map("sim_proc_state");
-            #endif
             start_ts = get_time();
             ptrace(PTRACE_CONT, tracee, 0, 0);
         }else{
@@ -361,14 +339,14 @@ int main(int argc, char *argv[]) {
             assert(0);
         }
 
-    #ifdef CONFIG_EAGER_SYNC
-        if(CONFIG_EAGER_SYNC){
-            if (pthread_create(&eager_sync_thread_id, NULL, eager_sync_accelerator_manager, NULL) != 0) {
-                perror("Failed to create thread");
-                return 1;
+        #ifdef CONFIG_EAGER_SYNC
+            if(CONFIG_EAGER_SYNC){
+                if (pthread_create(&eager_sync_thread_id, NULL, eager_sync_accelerator_manager, NULL) != 0) {
+                    perror("Failed to create thread");
+                    return 1;
+                }
             }
-        }
-    #endif
+        #endif
 
         while (1) {
             // safe_printf("Waiting for child\n");
@@ -466,9 +444,8 @@ int main(int argc, char *argv[]) {
     }
 
     end_ts = get_time();
-    extern uint64_t read_err_bound();
-    safe_printf("\n===\nExecution time (ms): %lu\nError upper bound (us): %lu\n===\n", (end_ts - start_ts)/1000000, read_err_bound()/1000);
-    printf("\n===\nExecution time (ms): %lu\nError upper bound (us): %lu\n===\n", (end_ts - start_ts)/1000000, read_err_bound()/1000);
+    safe_printf("\n===\nExecution time (ms) \n===\n", (end_ts - start_ts)/1000000);
+    printf("\n===\nExecution time (ms): %lu \n===\n", (end_ts - start_ts)/1000000);
     //flush the safe_printf
     fflush(stdout);
 END:
@@ -481,11 +458,12 @@ END:
         pthread_join(eager_sync_thread_id, NULL);
     }
     #endif
-    hw_deinit();
 
     #if CONFIG_ENABLE_BPF
-    destroy_bpf();
+        unmap_bpf();
     #endif
+
+    hw_deinit();
 
     DEBUG_PRINT("===== Tracer stopped ===== \n");
     return 0;

@@ -71,7 +71,6 @@ ssize_t write_process_memory(int fd, uintptr_t address, void *buffer, size_t siz
     return nwrite;
 }
 
-static int bpf_sched_ctrl_fd = -1;
 void bpf_sched_update_state(uint64_t value){
   // Update the state of the current thread
   // safe_printf("Updating state to %lu\n", value);

@@ -47,6 +47,7 @@ static void init_nex_log() {
     if (nex_log_fd < 0) {
         exit(1);
     }
+
 }
 
 // Async‑signal‑safe function to write a string into nex_log_fd.
@@ -181,7 +182,6 @@ static void safe_write_double(double d) {
 
 // Minimal safe_printf that supports %s, %d, %ld, %lu, %p, and now %f.
 void safe_printf(const char *fmt, ...) {
-    // return;
     LOG_LOCK;
     if(nex_log_fd < 0) {
         init_nex_log();

@@ -20,4 +20,8 @@ else ifeq ($(CONFIG_LEGACY_PROTOACC_DSIM),1)
 $(eval $(call subdir,legacy))
 endif
 
+ifeq ($(CONFIG_GPU), 1)
+$(eval $(call subdir,gpu))
+endif
+
 include mk/subdir_post.mk

@@ -93,6 +93,8 @@ uintptr_t driver_initialize(){
 __attribute__((constructor)) static void accvm_init(void) {
   initialize_functions();
   ctrl_base = driver_initialize();
+
+  #if CONFIG_ENABLE_BPF
   vts_fd =  bpf_obj_get("/sys/fs/bpf/vts");
   if (vts_fd < 0) {
       fprintf(stderr, "Error getting BPF vts map\n");
@@ -111,6 +113,7 @@ __attribute__((constructor)) static void accvm_init(void) {
       fprintf(stderr, "Error getting BPF sim_proc_state map\n");
       return;
   }
+  #endif
   
   // clean up everything 
   printf("LD_PRELOADED NEX Library \n");

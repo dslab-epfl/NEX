@@ -30,6 +30,8 @@ typedef struct __attribute__((packed)) SchedRegs {
 } SchedRegs;
 
 int put_bpf_map(int map_fd, void* key, void* value, int ops){
+
+#if CONFIG_ENABLE_BPF
 	if(ops == BPF_MAP_UPDATE){
 		if (bpf_map_update_elem(map_fd, key, value, BPF_ANY) != 0) {
 			fprintf(stderr, "ERROR: updating BPF map: %s\n", strerror(errno));
@@ -38,7 +40,7 @@ int put_bpf_map(int map_fd, void* key, void* value, int ops){
 	}
 	else if(ops == BPF_MAP_LOOKUP){
 		if (bpf_map_lookup_elem(map_fd, key, value) != 0) {
-			fprintf(stderr, "ERROR: lookup BPF map: %s\n", strerror(errno));
+			fprintf(stderr, "ERROR: lookup BPF map: %s; fd %d, key %p, value %p\n", strerror(errno), map_fd, key, value);
 			return 1;
 		}
 	}
@@ -48,13 +50,16 @@ int put_bpf_map(int map_fd, void* key, void* value, int ops){
 			return 1;
 		}
 	}
+#endif
 	return 0;
 }
 
 int ebs_is_on(){
   __u32 index = 0;
   __u64 state = 0;
+#if CONFIG_ENABLE_BPF
   bpf_map_lookup_elem(bpf_sched_ctrl_fd, &index, &state);
+#endif
   return state == 1;
 }
 
@@ -63,10 +68,12 @@ void tick_nex() {
 }
 
 void bpf_sched_update_state_per_pid(uint32_t ctrl_pid, uint32_t ctrl_msg){
+#if CONFIG_ENABLE_BPF
   struct pstate state;
   put_bpf_map(sim_proc_state_fd, &ctrl_pid, &state, BPF_MAP_LOOKUP);
   state.ctrl_msg = ctrl_msg;
   put_bpf_map(sim_proc_state_fd, &ctrl_pid, &state, BPF_MAP_UPDATE);
+#endif
 }
 
 static int sched_my_thread_id(void) {

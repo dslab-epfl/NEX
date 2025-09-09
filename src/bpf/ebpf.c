@@ -8,6 +8,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include <libgen.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
 #include <config/config.h>
 #include <exec/bpf.h>
 #include <scx/common.h>
@@ -21,11 +24,6 @@ static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va
 	if (level == LIBBPF_DEBUG && !verbose)
 		return 0;
 	return vfprintf(stderr, format, args);
-}
-
-static void sigint_handler(int simple)
-{
-	exit_req = 1;
 }
 
 static struct scx_simple *skel;
@@ -104,13 +102,21 @@ int pop_traced_child(int *ret_pid){
         fprintf(stderr, "Error pinning BPF map %d\n", errno); \
         return 1; \
     } \
+	if (chmod(path_name, 0666) < 0)                                         \
+        fprintf(stderr, "chmod failed: %s\n", strerror(errno));  
+
+#define GET_OBJ_BPF(map_name, path_name) \
+	map_name##_fd = bpf_obj_get(path_name); \
+	if (map_name##_fd < 0) { \
+		fprintf(stderr, "Error getting BPF map %s\n", path_name); \
+		return 1; \
+	} \
+	printf("BPF map %s obtained with fd %d\n", path_name, map_name##_fd); \
 
 int attach_bpf(int pid, int extra_cost, int on_off){
-
-	
-	libbpf_set_print(libbpf_print_fn);
-	signal(SIGINT, sigint_handler);
-	signal(SIGTERM, sigint_handler);
+		libbpf_set_print(libbpf_print_fn);
+	// signal(SIGINT, sigint_handler);
+	// signal(SIGTERM, sigint_handler);
 
 	skel = SCX_OPS_OPEN(simple_ops, scx_simple);
 	
@@ -161,17 +167,37 @@ int attach_bpf(int pid, int extra_cost, int on_off){
 
 	PIN_BPF_MAP_PATH(sim_proc_state, "/sys/fs/bpf/sim_proc_state")
 
-	printf("PID %u written to BPF map\n", pid);
+	// printf("PID %u written to BPF map\n", pid);
       
 	elink = SCX_OPS_ATTACH(skel, simple_ops, scx_simple);
-
 	return 0;
 }
 
-int destroy_bpf()
-{
-
+int map_bpf(){
 #if CONFIG_EAGER_SYNC
+	GET_OBJ_BPF(from_nex_runtime_event_q, "/sys/fs/bpf/from_nex_runtime_event_q");
+	GET_OBJ_BPF(to_nex_runtime_event_q, "/sys/fs/bpf/to_nex_runtime_event_q");
+#endif
+
+	GET_OBJ_BPF(vts, "/sys/fs/bpf/vts");
+	GET_OBJ_BPF(event_q, "/sys/fs/bpf/event_q");
+	// GET_OBJ_BPF(expired_event_q, "/sys/fs/bpf/expired_event_q");
+	GET_OBJ_BPF(thread_state_map, "/sys/fs/bpf/thread_state_map");
+	GET_OBJ_BPF(syscall_entry_real_time_map, "/sys/fs/bpf/syscall_entry_real_time_map");
+	GET_OBJ_BPF(bpf_sched_ctrl, "/sys/fs/bpf/bpf_sched_ctrl");
+	GET_OBJ_BPF(trace_event_q, "/sys/fs/bpf/trace_event_q");
+	GET_OBJ_BPF(sim_proc_state, "/sys/fs/bpf/sim_proc_state");
+	return 0;
+}
+
+int unmap_bpf()
+{
+	return 0;
+}
+
+int destroy_bpf(){
+
+	#if CONFIG_EAGER_SYNC
 	UNPIN_BPF_MAP_PATH(from_nex_runtime_event_q, "/sys/fs/bpf/from_nex_runtime_event_q");
 	UNPIN_BPF_MAP_PATH(to_nex_runtime_event_q, "/sys/fs/bpf/to_nex_runtime_event_q");
 #endif	
@@ -188,7 +214,6 @@ int destroy_bpf()
 	bpf_link__destroy(elink);
 	UEI_REPORT(skel, uei);
 	scx_simple__destroy(skel);
-	
 	return 0;
 }
 
@@ -212,7 +237,7 @@ int put_bpf_map(int map_fd, void* key, void* value, int ops){
 	}
 	else if(ops == BPF_MAP_LOOKUP){
 		if (bpf_map_lookup_elem(map_fd, key, value) != 0) {
-			fprintf(stderr, "ERROR: lookup BPF map: %s\n", strerror(errno));
+			fprintf(stderr, "ERROR: lookup BPF map: %s; fd %d, key %p, value %p\n", strerror(errno), map_fd, key, value);
 			return 1;
 		}
 	}

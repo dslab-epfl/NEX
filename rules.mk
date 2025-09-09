@@ -35,6 +35,7 @@ d := ./
 # Initialize target-specific object collections
 ALL_ALL :=
 EXEC_ALL :=
+EXEC_SRV_ALL :=
 ACCVM_ALL :=
 CLEAN_ALL :=
 DSIM_ALL :=
@@ -42,11 +43,12 @@ DSIM_ALL :=
 EXEC_BINARY := nex
 SHARED_LIB := src/accvm.so
 BPF_LIB_SO := libmybpf.so
+SRV_BINARY := nex_srv
 
 $(eval $(call subdir,src))
 
 # Default target (after subdir processing to populate ALL_ALL)
-all: $(EXEC_BINARY) $(SHARED_LIB) $(ALL_ALL)
+all: $(EXEC_BINARY) $(SHARED_LIB) $(SRV_BINARY) $(ALL_ALL)
 default: all
 
 # Library paths and dependencies
@@ -95,9 +97,25 @@ $(EXEC_BINARY): $(EXEC_ALL) $(LEGACY_LIB_TARGETS) config.mk
 endif
 
 # MMIO interception shared library (uses accvm objects only)
+ifeq ($(CONFIG_GPU),1)
+$(SHARED_LIB): $(ACCVM_ALL) $(GPU_STATIC_LIB) config.mk
+	$(CC) $(INCLUDE) $(CFLAGS) -shared $(ACCVM_ALL) $(GPU_STATIC_LIB) -o $@ $(LDFLAGS) \
+		-Llib -lsimbricks $(GPU_LIBS)
+else
 $(SHARED_LIB): $(ACCVM_ALL) config.mk
 	$(CC) $(INCLUDE) $(CFLAGS) -shared $(ACCVM_ALL) -o $@ $(LDFLAGS) \
 		-Llib -lsimbricks
+endif
+
+# NEX server binary (uses srv.o and ebpf.o)
+ifeq ($(CONFIG_ENABLE_BPF), 1)
+$(SRV_BINARY): $(EXEC_SRV_ALL) $(BPF_OBJECTS) config.mk
+	$(CC) $(INCLUDE) $(CFLAGS) $(EXEC_SRV_ALL) $(BPF_OBJECTS) -o $@ -lpthread $(LDFLAGS) \
+		$(BPF_LINKS)
+else
+$(SRV_BINARY): $(EXEC_SRV_ALL) config.mk
+	$(CC) $(INCLUDE) $(CFLAGS) $(EXEC_SRV_ALL) -o $@ -lpthread $(LDFLAGS)
+endif
 
 # SCX scheduler build
 scx:
@@ -115,7 +133,7 @@ endif
 
 # Clean target
 clean:
-	rm -f $(CLEAN_ALL) $(EXEC_BINARY) $(SHARED_LIB)
+	rm -f $(CLEAN_ALL) $(EXEC_BINARY) $(SHARED_LIB) $(SRV_BINARY)
 	rm -f $(BPF_OBJECTS)
 
 menuconfig:
@@ -125,6 +143,8 @@ menuconfig:
 install: $(EXEC_BINARY)
 	cp $(EXEC_BINARY) /usr/local/bin/$(EXEC_BINARY)
 	chmod +x /usr/local/bin/$(EXEC_BINARY)
+	cp $(SRV_BINARY) /usr/local/bin/$(SRV_BINARY)
+	chmod +x /usr/local/bin/$(SRV_BINARY)
 
 dsim: $(DSIM_ALL)
 	cp ./src/sims/lpn/jpeg_decoder/jpeg_decoder_bm ./simulators/dsim/jpeg

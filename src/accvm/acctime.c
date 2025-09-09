@@ -114,6 +114,7 @@ struct per_thread_state {
     __u64 halt_until;
 };
 
+
 #if CONFIG_ROUND_BASED_MODE
 uint64_t read_vts(){
   __u32 index = 0;
@@ -175,6 +176,14 @@ uint64_t get_real_ts() {
   return ts.tv_sec * 1000000000LL + ts.tv_nsec;
 }
 
+#if !CONFIG_ENABLE_BPF
+uint64_t read_vts(){
+    //read actual time 
+    return get_real_ts();
+} 
+#endif
+
+
 // Microseconds to timeval
 void usToTimeval(uint64_t microseconds, struct timeval *time) {
   time->tv_sec = microseconds / 1000000;
@@ -234,24 +243,36 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
   return 0;
 }
 
-int clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *request, struct timespec *remain) {
+int clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *req, struct timespec *rem) {
   // printf("\n=== clock nanosleep\n");
-  __u32 index2 = 1;
-  __u64 state = 0;
-  bpf_map_lookup_elem(bpf_sched_ctrl_fd, &index2, &state);
-  if(state == 0){
-    // printf("clock nanosleep the quantum scheduling is off \n");
-    return orig_clock_nanosleep(clock_id, flags, request, remain);
-  }
+  // __u32 index2 = 1;
+  // __u64 state = 0;
+  // bpf_map_lookup_elem(bpf_sched_ctrl_fd, &index2, &state);
+  // if(state == 0){
+  //   // printf("clock nanosleep the quantum scheduling is off \n");
+  //   return orig_clock_nanosleep(clock_id, flags, request, remain);
+  // }
 
-  int thread_state_map_fd = bpf_obj_get("/sys/fs/bpf/thread_state_map");
-  int pid = getpid();
+  // int thread_state_map_fd = bpf_obj_get("/sys/fs/bpf/thread_state_map");
+  // int pid = getpid();
+  // uint64_t start_t = read_vts();
+  // uint64_t orig_sleep_time = request->tv_sec*1000000000 + request->tv_nsec;
+  // struct per_thread_state thread_state;
+  // thread_state.halt_until = start_t + orig_sleep_time;
+  // int ret = bpf_map_update_elem(thread_state_map_fd, &pid, &thread_state, BPF_ANY);
+  // return ret;
+
   uint64_t start_t = read_vts();
-  uint64_t orig_sleep_time = request->tv_sec*1000000000 + request->tv_nsec;
-  struct per_thread_state thread_state;
-  thread_state.halt_until = start_t + orig_sleep_time;
-  int ret = bpf_map_update_elem(thread_state_map_fd, &pid, &thread_state, BPF_ANY);
-  return ret;
+  uint64_t orig_sleep_time = req->tv_sec*1000000000 + req->tv_nsec;
+  uint64_t end_t = start_t + orig_sleep_time;
+  uint64_t time_now = start_t;
+  while(time_now < end_t){
+    orig_nanosleep(req, rem);
+    time_now = read_vts();
+  }
+  rem->tv_sec = 0;
+  rem->tv_nsec = 0;
+  return 0;
 }
 
 
