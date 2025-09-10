@@ -200,7 +200,7 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
-    __uint(max_entries, 1);
+    __uint(max_entries, 2);
     __type(key, u32);
     __type(value, u64);
 } bpf_sched_ctrl SEC(".maps");
@@ -434,6 +434,8 @@ static inline int cpu_sched_stats_used(u32 pcpu){
 static u32 round;
 static u64 round64;
 
+static volatile u32 traced_deadlock_detect_cnt = 0;
+static volatile bool traced_deadlock_detect_unblock_activated = 0;
 /* 
 Not used;
 Counts how many times the cpu has been continously fetch from DSQ1 or 2 instead of the OTHER_DSQ
@@ -1146,11 +1148,43 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
     u16 q1_total_enabled = (all_in_one_counter >> Q1_CNT_SHIFT) & 0xFFFF;
     u16 q2_total_enabled = (all_in_one_counter >> Q2_CNT_SHIFT) & 0xFFFF;
 
-    // guard, if sp_trace_cnt > 0, => someone is being traced, and stopped, 
+    if(cpu == SIM_CORE_START){
+        
+        if(traced_deadlock_detect_unblock_activated){
+            traced_deadlock_detect_unblock_activated = false;
+            traced_deadlock_detect_cnt = 0;
+            bpf_printk("Info: deadlock unblock activated once, reset the deadlock detect state\n");
+        }
+
+        if(sp_traced_cnt > 0){
+            u32 _index = 1;
+            u64 _state = 0;
+            u64* _state_ptr = bpf_map_lookup_elem(&bpf_sched_ctrl, &_index);
+            if(_state_ptr){
+                _state = *_state_ptr;
+            }
+            if(_state > 0){
+                if(traced_deadlock_detect_cnt > _state && traced_deadlock_detect_unblock_activated == false){
+                    bpf_printk("WARN: deadlock detected, traced cnt %d, total enabled %d, q1 %d, q2 %d\n", sp_traced_cnt, sim_total_enabled, q1_total_enabled, q2_total_enabled);
+                    kick_all_cpu(SCX_KICK_IDLE);
+                    traced_deadlock_detect_unblock_activated = true;
+                }else{
+                    traced_deadlock_detect_cnt += 1;
+                }
+            }
+        }
+    }
+
+    if(traced_deadlock_detect_unblock_activated){
+        // ignore the traced cnt
+        sp_traced_cnt = 0;
+    }
+
+    // guard, if sp_traced_cnt > 0, => someone is being traced, and stopped,
     // guard, if sim_total_enabled is 0 => no task is enabled, hence don't start switching queue.
     if(sp_traced_cnt > 0 || sim_total_enabled == 0){
         DEBUG_PRINT("Traced cnt %d, sim_total_enabled %d\n", sp_traced_cnt, sim_total_enabled);
-        KICK_ME_AND_RETURN;
+        KICK_ME_AND_RETURN;        
     }
 
     if(on_off == 1 && sim_total_enabled != q1_total_enabled + q2_total_enabled){

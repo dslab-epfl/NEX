@@ -11,6 +11,10 @@
 #include <semaphore.h>
 #include <accvm/func_tags.h>
 #include <sys/types.h>
+#include <sys/mman.h>
+#include <sys/shm.h>
+#include <dlfcn.h>
+#include <unistd.h>
 
 #define FORCE_WAIT_FOR_OUTLAW 1000000 // 1 ms
 extern int vm_destroyed;
@@ -20,6 +24,18 @@ extern int (*orig_pthread_mutex_lock)(pthread_mutex_t *mutex);
 extern int (*orig_pthread_mutex_unlock)(pthread_mutex_t *mutex);
 extern int (*orig_pthread_cond_wait)(pthread_cond_t *cond, pthread_mutex_t *mutex);
 extern int (*orig_pthread_cond_signal)(pthread_cond_t *cond);
+
+// Memory management functions
+extern void *(*orig_mmap)(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+extern int (*orig_munmap)(void *addr, size_t length);
+extern int (*orig_mprotect)(void *addr, size_t len, int prot);
+extern void *(*orig_mremap)(void *old_address, size_t old_size, size_t new_size, int flags, ...);
+extern int (*orig_brk)(void *addr);
+extern void *(*orig_sbrk)(intptr_t increment);
+extern void *(*orig_shmat)(int shmid, const void *shmaddr, int shmflg);
+extern int (*orig_shmdt)(const void *shmaddr);
+extern void *(*orig_dlopen)(const char *filename, int flags);
+extern int (*orig_dlclose)(void *handle);
 
 #define MAX_TASKS 1000
 #define NO_NEXT -1 // Indicates no next task

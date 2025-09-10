@@ -45,10 +45,26 @@ int rewrite_bpf(int pid){
 uint64_t read_vts(){
 	__u32 index = 0;
 	__u64 vts = 0;
-	int fd = bpf_map__fd(skel->maps.vts);
-	bpf_map_lookup_elem(fd, &index, &vts);
+	bpf_map_lookup_elem(vts_fd, &index, &vts);
 	return vts;
 }
+
+uint64_t set_vts(uint64_t value){
+	__u32 index = 0;
+	__u64 vts = value;
+	bpf_map_update_elem(vts_fd, &index, &vts, BPF_ANY);
+	return vts;
+}
+
+
+void cfg_deadlock_resolve(uint64_t threshold){
+	// if threshold is 0, disable the deadlock detect
+	// threshold is number of times core gets nothing to run
+	__u32 index = 1;
+	__u64 state = threshold;
+	bpf_map_update_elem(bpf_sched_ctrl_fd, &index, &state, BPF_ANY);
+}
+
 
 struct sched_stats{
 	__u64 err_early_end;
@@ -56,17 +72,13 @@ struct sched_stats{
 };
 
 uint64_t read_err_bound(){
-	__u32 index = 0;
-	struct sched_stats stats;
-	int fd = bpf_map__fd(skel->maps.sched_stats);
-	bpf_map_lookup_elem(fd, &index, &stats);
-	return stats.err_late_end;
+	// not used
+	return 0;
 }
 
 int pop_traced_child(int *ret_pid){
 	__u32 pid = 0;
-	int fd = bpf_map__fd(skel->maps.traced_q);
-	int ret = bpf_map_lookup_and_delete_elem(fd, NULL, &pid);
+	int ret = bpf_map_lookup_and_delete_elem(trace_event_q_fd, NULL, &pid);
 	*ret_pid = (int)pid; 
 	return ret;
 }
@@ -136,11 +148,8 @@ int attach_bpf(int pid, int extra_cost, int on_off){
 	skel->rodata->TIME_QUANTUM = CONFIG_ROUND_SLICE;
 	skel->rodata->NR_CORES = CONFIG_TOTAL_CORES;
 	skel->rodata->SIM_NR_CORES = CONFIG_SIM_CORES;
-	if (on_off == -1){
-		skel->rodata->DEFAULT_ON_OFF = CONFIG_DEFAULT_ON_OFF;
-	}else{
-		skel->rodata->DEFAULT_ON_OFF = on_off;
-	}
+	skel->rodata->DEFAULT_ON_OFF = CONFIG_DEFAULT_ON_OFF;
+	
 #if CONFIG_SIM_VIRT_CORES > 0
 	skel->rodata->SIM_VIRT_CORES = CONFIG_SIM_VIRT_CORES;
 #endif

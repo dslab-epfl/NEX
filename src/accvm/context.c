@@ -15,8 +15,22 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/shm.h>
+#include <dlfcn.h>
 
 __thread t_context *self_ctx;
+
+// Memory management function pointers
+// void *(*orig_mmap)(void *addr, size_t length, int prot, int flags, int fd, off_t offset) = NULL;
+// int (*orig_munmap)(void *addr, size_t length) = NULL;
+// int (*orig_mprotect)(void *addr, size_t len, int prot) = NULL;
+// void *(*orig_mremap)(void *old_address, size_t old_size, size_t new_size, int flags, ...) = NULL;
+// int (*orig_brk)(void *addr) = NULL;
+// void *(*orig_sbrk)(intptr_t increment) = NULL;
+// void *(*orig_shmat)(int shmid, const void *shmaddr, int shmflg) = NULL;
+// int (*orig_shmdt)(const void *shmaddr) = NULL;
+// void *(*orig_dlopen)(const char *filename, int flags) = NULL;
+// int (*orig_dlclose)(void *handle) = NULL;
 
 t_context* get_old_ctx(context_list *lst, pid_t tid) {
     DEBUG_H("Thread<%lu>: enter get old context; tail length %d,lock %p\n", (unsigned long)(gettid()), lst->tail, &lst->sem);
@@ -735,5 +749,17 @@ void initialize_functions() {
   orig_poll = (int (*)(struct pollfd *, nfds_t, int))dlsym(RTLD_NEXT, "poll");
 
   orig_fsync = (int (*)(int fd))dlsym(RTLD_NEXT, "fsync");
+
+  // Memory management functions
+//   orig_mmap = (void *(*)(void *, size_t, int, int, int, off_t))dlsym(RTLD_NEXT, "mmap");
+//   orig_munmap = (int (*)(void *, size_t))dlsym(RTLD_NEXT, "munmap");
+//   orig_mprotect = (int (*)(void *, size_t, int))dlsym(RTLD_NEXT, "mprotect");
+//   orig_mremap = (void *(*)(void *, size_t, size_t, int, ...))dlsym(RTLD_NEXT, "mremap");
+//   orig_brk = (int (*)(void *))dlsym(RTLD_NEXT, "brk");
+//   orig_sbrk = (void *(*)(intptr_t))dlsym(RTLD_NEXT, "sbrk");
+//   orig_shmat = (void *(*)(int, const void *, int))dlsym(RTLD_NEXT, "shmat");
+//   orig_shmdt = (int (*)(const void *))dlsym(RTLD_NEXT, "shmdt");
+//   orig_dlopen = (void *(*)(const char *, int))dlsym(RTLD_NEXT, "dlopen");
+//   orig_dlclose = (int (*)(void *))dlsym(RTLD_NEXT, "dlclose");
 
 }

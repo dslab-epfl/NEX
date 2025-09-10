@@ -1,1 +1,0 @@
-cd /home/jcm/zhxj-NEX/external/ns-3-dev && ./ns3 run tap-nccl --enable-sudo

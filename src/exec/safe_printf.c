@@ -32,17 +32,15 @@ static int nex_log_fd = -1;
 static void init_nex_log() {
     // Open the log file in append mode, create it if it doesn't exist.
     // O_CLOEXEC can be added if desired.
-    char* exp_name = getenv("NEX_EXP_NAME");
-    if(exp_name != NULL) {
-        char dir_path[200];
-        sprintf(dir_path, "%s/out/%s", CONFIG_PROJECT_PATH, exp_name);
-        mkdir(dir_path, 0777);
-        char log_path[200];
-        sprintf(log_path, "%s/out/%s/nex.log", CONFIG_PROJECT_PATH, exp_name);
-        nex_log_fd = open(log_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    }else{
-        nex_log_fd = open(NEX_LOG_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    }
+    // char* exp_name = getenv("NEX_EXP_NAME");
+    char exp_name[50];
+    snprintf(exp_name, sizeof(exp_name), "nex_exp_%d", getpid());
+    char dir_path[200];
+    sprintf(dir_path, "%s/out/%s", CONFIG_PROJECT_PATH, exp_name);
+    mkdir(dir_path, 0777);
+    char log_path[200];
+    sprintf(log_path, "%s/out/%s/nex.log", CONFIG_PROJECT_PATH, exp_name);
+    nex_log_fd = open(log_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     // Handle errors appropriately in your real code.
     if (nex_log_fd < 0) {
         exit(1);

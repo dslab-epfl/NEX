@@ -103,12 +103,29 @@ void update_ctrl_reg(uint64_t value) {
     sched_ctrl_unlock(sched_reg);
 }
 
+
+pid_t fork(void){
+   if(ebs_is_on()){
+        printf("fork: EBS is on, updating state for jail break\n");
+        update_ctrl_reg(JAIL_BREAK_NO_HALT);
+        pid_t ret = orig_fork();
+        update_ctrl_reg(JAIL_NO_HALT);
+        printf("fork: Exit jail break\n");
+        return ret;
+        
+    }else{
+        return orig_fork();
+    }
+}
+
 int pthread_create(
     pthread_t *thread,
     const pthread_attr_t *attr,
     void *(*start_routine)(void *),
     void *arg
 ) {
+
+    // return orig_pthread_create(thread, attr, start_routine, arg);
   
     // #if CONFIG_USE_FAULT
     // USE FAULT requires reading process memory to decode instructions
@@ -116,11 +133,11 @@ int pthread_create(
     // which deadlocks the whole system
     // the beflow is to address that issue
     if(ebs_is_on()){
-        // printf("pthread_create: EBS is on, updating state for jail break\n");
+        printf("pthread_create: EBS is on, updating state for jail break\n");
         update_ctrl_reg(JAIL_BREAK_NO_HALT);
         int ret = orig_pthread_create(thread, attr, start_routine, arg);
         update_ctrl_reg(JAIL_NO_HALT);
-        // printf("pthread_create: Exit jail break\n");
+        printf("pthread_create: Exit jail break\n");
         return ret;
         
     }else{

@@ -43,9 +43,11 @@ extern int event_q_fd;
 extern int vts_fd;
 
 extern uint64_t read_vts();
+extern uint64_t set_vts(uint64_t value);
 extern int get_bpf_map(char* map_name);
 extern int put_bpf_map(int map_fd, void* key, void* value, int ops);
 extern int attach_bpf(int pid, int extra_cost, int on_off);
 extern int destroy_bpf();
 extern int map_bpf();
 extern int unmap_bpf();
+extern void cfg_deadlock_resolve(uint64_t threshold);

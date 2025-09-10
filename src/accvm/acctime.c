@@ -122,11 +122,11 @@ uint64_t read_vts(){
   __u64 vts = 0;
   bpf_map_lookup_elem(bpf_sched_ctrl_fd, &index, &state);
   if(state == 1){
-    // printf("the quantum scheduling is on \n");
     __u32 index = 0;
     bpf_map_lookup_elem(vts_fd, &index, &vts);
+    // printf("read_vts the quantum scheduling is on, vts: %lld \n", vts);
   }else{
-    // printf("the quantum scheduling is off \n");
+    printf("read_vts the quantum scheduling is off \n");
     struct timespec ts;
     assert(orig_clock_gettime != NULL);
     orig_clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -215,11 +215,8 @@ void vm_adjust_vm_time(t_context *ctx, uint64_t *entry_ts){
 
 // Preload overload of gettimeofday
 int gettimeofday(struct timeval *tv, void *tz) {
-  // printf("gettimeofday start\n");
-
   uint64_t vts = read_vts();
   usToTimeval(vts/1000, tv);
-  // printf("gettimeofday %lu\n", vts/1000);
   return 0;
 }
 

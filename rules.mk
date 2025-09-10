@@ -10,8 +10,8 @@ LEGACY_LIB_TARGETS :=
 LEGACY_RPATH :=
 
 # No -O3 to avoid deadlock
-CFLAGS = -Wall -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -fPIC -O2 
-CXXFLAGS = -Wall -Wno-unused-variable -Wno-unused-but-set-variable -fPIC -O2
+CFLAGS = -Wall -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -fPIC -O2 -g
+CXXFLAGS = -Wall -Wno-unused-variable -Wno-unused-but-set-variable -fPIC -O2 -g
 LDFLAGS = -ldl -lcapstone -lrt
 
 ifeq ($(CONFIG_ENABLE_BPF), 1)
@@ -98,9 +98,9 @@ endif
 
 # MMIO interception shared library (uses accvm objects only)
 ifeq ($(CONFIG_GPU),1)
-$(SHARED_LIB): $(ACCVM_ALL) $(GPU_STATIC_LIB) config.mk
-	$(CC) $(INCLUDE) $(CFLAGS) -shared $(ACCVM_ALL) $(GPU_STATIC_LIB) -o $@ $(LDFLAGS) \
-		-Llib -lsimbricks $(GPU_LIBS)
+$(SHARED_LIB): $(ACCVM_ALL) config.mk
+	$(CC) $(INCLUDE) $(CFLAGS) -shared $(ACCVM_ALL) -o $@ $(LDFLAGS) \
+		-Llib -lsimbricks 
 else
 $(SHARED_LIB): $(ACCVM_ALL) config.mk
 	$(CC) $(INCLUDE) $(CFLAGS) -shared $(ACCVM_ALL) -o $@ $(LDFLAGS) \
@@ -140,10 +140,10 @@ menuconfig:
 	@scripts/menuconfig.py
 
 # Install target
-install: $(EXEC_BINARY)
-	cp $(EXEC_BINARY) /usr/local/bin/$(EXEC_BINARY)
+install: $(EXEC_BINARY) $(SRV_BINARY) $(SHARED_LIB) config.mk
+	cp ./$(EXEC_BINARY) /usr/local/bin/$(EXEC_BINARY)
 	chmod +x /usr/local/bin/$(EXEC_BINARY)
-	cp $(SRV_BINARY) /usr/local/bin/$(SRV_BINARY)
+	cp ./$(SRV_BINARY) /usr/local/bin/$(SRV_BINARY)
 	chmod +x /usr/local/bin/$(SRV_BINARY)
 
 dsim: $(DSIM_ALL)
@@ -179,4 +179,14 @@ autoconfig_vm:
 	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
 	./test/autoconfig.sh $(CONFIG_PROJECT_PATH) 5 2000 3000
 
-.PHONY: all clean scx test_jpeg menuconfig install dsim
+CLEAN_ALL += test/rdtsc_vs_gettimeofday
+
+test/rdtsc_vs_gettimeofday: test/rdtsc_vs_gettimeofday.c
+	$(CC) $(CFLAGS) -Wextra -o $@ $<
+
+compile_rdtsc: test/rdtsc_vs_gettimeofday
+
+test_rdtsc: compile_rdtsc
+	./nex ./test/rdtsc_vs_gettimeofday
+
+.PHONY: all clean scx test_jpeg menuconfig install dsim compile_rdtsc test_rdtsc

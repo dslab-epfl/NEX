@@ -10,6 +10,11 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <execinfo.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/prctl.h>
+#include <sys/user.h>
+#include <stdlib.h>
 
 // #define EXEC_DEBUG 
 // turn off debug print, otherwise it can deadlock
@@ -38,6 +43,10 @@ int syscall_entry_real_time_map_fd;
 int thread_state_map_fd;
 int event_q_fd;
 int vts_fd;
+
+#if CONFIG_ENABLE_BPF
+int handle_if_rdtsc(int waited_child);
+#endif
 
 extern void bpf_sched_update_state_per_pid(uint32_t ctrl_pid, uint32_t ctrl_msg);
 
@@ -190,6 +199,7 @@ install_crash_handler(void)
 
 int main(int argc, char *argv[]) {
     
+    // on bpf errors without sudo; try this, sudo chmod 0711 /sys/fs/bpf
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <program> [args...]\n", argv[0]);
         return EXIT_FAILURE;
@@ -201,17 +211,28 @@ int main(int argc, char *argv[]) {
     map_bpf();
     #endif
 
-    struct sched_param sp = { .sched_priority = 0 };
     // child inherent the scheduling policy
-    sched_setscheduler(nex_pid, SCHED_EXT, &sp);
+    
+    printf("NEX exec running %d \n", nex_pid);
 
-    printf("NEX exec running (set SCHED_EXT for all my child). Will launch %s\n", argv[1]);
+    struct sched_param sp = { .sched_priority = 0 };
+    sched_setscheduler(nex_pid, SCHED_EXT, &sp);
 
     uint64_t start_ts, end_ts;
 
-    init(0);  
+    init(0);
 
     install_crash_handler();
+
+    pid_t busy_loop_pid = fork();
+    if (busy_loop_pid == 0) {
+        // Child process: the busy loop
+        // while(1){
+        //     volatile int x = 0;
+        // }
+        exit(0);
+    }
+
 
     pid_t dp = fork();
     pid_t tracee=-1;
@@ -220,6 +241,13 @@ int main(int argc, char *argv[]) {
         raise(SIGSTOP);
             // Child process: the tracee
         safe_printf("Tracee pid: %d\n", getpid());
+
+        // Trap RDTSC by delivering SIGSEGV when executed (x86/x86_64 only)
+        #if CONFIG_ENABLE_BPF && defined(__x86_64__)
+        if (prctl(PR_SET_TSC, PR_TSC_SIGSEGV) == -1) {
+            perror("prctl(PR_SET_TSC, PR_TSC_SIGSEGV)");
+        }
+        #endif
 
         #define INTERCEPT_SYSCALL(name) \
             BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_##name, 0, 1), \
@@ -276,35 +304,35 @@ int main(int argc, char *argv[]) {
         
         char ld_preload_str[200] = "LD_PRELOAD=";
         //append to the ld_preload string if cuda enabled 
-        #if CONFIG_ENABLE_CUDA
-            snprintf(ld_preload_str + strlen(ld_preload_str), 
-                    sizeof(ld_preload_str) - strlen(ld_preload_str), 
-                    "%s/%s", CONFIG_PROJECT_PATH, 
-                    "external/cuda_interpose/bin/cricket-client.so:");
-        #endif
 
         #if CONFIG_ENABLE_BPF
             snprintf(ld_preload_str + strlen(ld_preload_str), 
                     sizeof(ld_preload_str) - strlen(ld_preload_str), 
                     "%s/%s", CONFIG_PROJECT_PATH, 
-                    "src/accvm.so");
+                    "src/accvm.so:");
         #endif
 
-        #if CONFIG_ENABLE_BPF || CONFIG_ENABLE_CUDA
+        #if CONFIG_GPU
+            snprintf(ld_preload_str + strlen(ld_preload_str), 
+                    sizeof(ld_preload_str) - strlen(ld_preload_str), 
+                    "%s/%s", CONFIG_PROJECT_PATH, 
+                    "src/sims/gpu/nex_cuda.so");
+        #endif
+
+        #if CONFIG_ENABLE_BPF || CONFIG_GPU
             strcpy(new_env[env_count], ld_preload_str);
             safe_printf("LD_PRELOAD: %s\n", new_env[env_count]);
         #endif
 
-        #if CONFIG_ENABLE_CUDA
+        #if CONFIG_GPU
             new_env[env_count+1] = malloc(200);
-            sprintf(new_env[env_count+1], "REMOTE_GPU_ADDRESS=%s", CONFIG_CUDA_GPU_ADDRESS);
-            new_env[env_count+2] = malloc(200);
-            sprintf(new_env[env_count+2], "LD_LIBRARY_PATH=%s/%s:$LD_LIBRARY_PATH", CONFIG_PROJECT_PATH, "external/cuda_interpose/bin/");
+            sprintf(new_env[env_count+1], "REPLACE_LIB=%s/%s", CONFIG_PROJECT_PATH, "src/sims/gpu/nex_cuda.so");
         #endif
 
         set_mmio_to_user();
         new_env[env_count+3] = NULL;
-        safe_printf("Child will exec %s\n", argv[1]);
+
+        printf("Set sched_class to SCHED_EXT, now it will exec %s\n", argv[1]);
 
         execvpe(argv[1], argv + 1, new_env);
         perror("execvpe");
@@ -316,13 +344,18 @@ int main(int argc, char *argv[]) {
         // Parent process: the tracer
         int waited_pid = waitpid(-1, &status, WUNTRACED);
         
+        // Stopped
+        // goto ABS_END;
+        
         if(waited_pid == dp){
             if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGSTOP) {
+                safe_printf("Child %d has stopped and is ready to be traced.\n", waited_pid);
                 ptrace(PTRACE_SEIZE, waited_pid, 0, 0);
                 // ptrace(PTRACE_SETOPTIONS, child, NULL, PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXEC | PTRACE_O_TRACEEXIT);
                 // ptrace(PTRACE_SETOPTIONS, child, NULL, PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXEC | PTRACE_O_TRACEEXIT);
                 ptrace(PTRACE_SETOPTIONS, waited_pid, NULL, PTRACE_O_TRACESECCOMP | PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACEEXEC);
                 ptrace(PTRACE_CONT, waited_pid, 0, 0);
+                safe_printf("Child cont. %d\n", waited_pid);
             }
         }
 
@@ -332,8 +365,10 @@ int main(int argc, char *argv[]) {
         int ret = waitpid(tracee, &status, 0);
         assert(ret != -1);
         if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
+            safe_printf("Child %d has stopped at first exec.\n", waited_pid);
             start_ts = get_time();
             ptrace(PTRACE_CONT, tracee, 0, 0);
+            safe_printf("Child %d cont. \n", waited_pid);
         }else{
             printf("Tracee error: %d\n", WSTOPSIG(status));
             assert(0);
@@ -350,6 +385,9 @@ int main(int argc, char *argv[]) {
 
         while (1) {
             // safe_printf("Waiting for child\n");
+            safe_printf("Auto resolve deadlock set threshold for 10 tries; (set to 0 turns this off)\n");
+            cfg_deadlock_resolve(10);
+
             int waited_child = 0;
             do{
                 waited_child = waitpid(-1, &status, __WALL);
@@ -412,9 +450,13 @@ int main(int argc, char *argv[]) {
                     ptrace(PTRACE_CONT, waited_child, 0, 0);
             }else if(WIFSTOPPED(status) && WSTOPSIG(status)==SIGSEGV){
                 safe_printf("sigsegv enter \n");
-                handle_hw_fault(waited_child, SIGSEGV);
-                ptrace(PTRACE_CONT, waited_child, 0, 0);
+                int is_rdtsc = handle_if_rdtsc(waited_child);
+                if(!is_rdtsc){
+                    handle_hw_fault(waited_child, SIGSEGV);
+                    ptrace(PTRACE_CONT, waited_child, 0, 0);
+                }
                 safe_printf("sigsegv return\n");
+
             }else if (WIFSTOPPED(status) && WSTOPSIG(status)==SIGILL) {
                 safe_printf("SIGILL enter\n");
                 handle_hw_fault(waited_child, SIGILL);
@@ -438,7 +480,7 @@ int main(int argc, char *argv[]) {
                     ptrace(PTRACE_CONT, waited_child, 0, 0);
                     goto END;
                 }
-                ptrace(PTRACE_CONT, waited_child, 0, 0);
+                ptrace(PTRACE_CONT, waited_child, 0, WSTOPSIG(status));
             }
         }
     }
@@ -450,7 +492,6 @@ int main(int argc, char *argv[]) {
     fflush(stdout);
 END:
     ptrace(PTRACE_CONT, dp, 0, 0);
-    sim_end = 1;
 
     #ifdef CONFIG_EAGER_SYNC
     if(CONFIG_EAGER_SYNC){
@@ -459,11 +500,16 @@ END:
     }
     #endif
 
+ABS_END:
+    sim_end = 1;
+
+    kill(busy_loop_pid, SIGKILL);
+
     #if CONFIG_ENABLE_BPF
         unmap_bpf();
     #endif
 
-    hw_deinit();
+    // hw_deinit();
 
     DEBUG_PRINT("===== Tracer stopped ===== \n");
     return 0;
@@ -472,6 +518,10 @@ END:
 #if !CONFIG_ENABLE_BPF
 uint64_t read_vts(){
 	return 0;
+}
+
+void cfg_deadlock_resolve(uint64_t threshold){
+    return;
 }
 
 int get_bpf_map(char* map_name){
@@ -495,3 +545,108 @@ int destroy_bpf(){
 }
 
 #endif
+
+static uint64_t find_freq_khz(){
+    FILE *fp = fopen("/proc/cpuinfo", "r");
+    if (fp == NULL) {
+        perror("Failed to open /proc/cpuinfo");
+        return 0;
+    }
+
+    char line[256];
+    uint64_t freq_khz = 0;
+
+    while (fgets(line, sizeof(line), fp)) {
+        if (sscanf(line, "cpu MHz : %" SCNu64, &freq_khz) == 1) {
+            freq_khz *= 1000; // Convert MHz to kHz
+            break;
+        }
+    }
+
+    fclose(fp);
+
+    if (freq_khz == 0) {
+        fprintf(stderr, "Failed to find CPU frequency in /proc/cpuinfo\n");
+    }
+
+    return freq_khz;
+}
+
+int handle_if_rdtsc(int waited_child){
+    
+    #if CONFIG_ENABLE_BPF
+
+    safe_printf("handle_if_rdtsc for %d\n", waited_child);
+     // Detect if SIGSEGV was caused by RDTSC when PR_SET_TSC=PR_TSC_SIGSEGV
+    int is_rdtsc = 0;
+    int is_rdtscp = 0;
+    unsigned long long rip_val = 0;
+    struct user_regs_struct regs;
+    int regs_valid = 0;
+    #if defined(__x86_64__) 
+    {
+        if (ptrace(PTRACE_GETREGS, waited_child, 0, &regs) == 0) {
+            // safe_printf("PTRACE_GETREGS for %d\n", waited_child);
+            regs_valid = 1;
+            #ifdef __x86_64__
+            rip_val = regs.rip;
+            #else
+            rip_val = regs.eip;
+            #endif
+            errno = 0;
+            long w = ptrace(PTRACE_PEEKTEXT, waited_child, (void*)rip_val, 0);
+            // safe_printf("PTRACE_PEEKTEXT for %d\n", waited_child);
+            if (!(w == -1 && errno)) {
+                unsigned char b[8];
+                memcpy(b, &w, sizeof(w));
+                // RDTSC: 0F 31; RDTSCP: 0F 01 F9
+                if ((b[0] == 0x0f && b[1] == 0x31) ||
+                    (b[0] == 0x0f && b[1] == 0x01)) {
+                    if (b[0] == 0x0f && b[1] == 0x31) {
+                        is_rdtsc = 1;
+                    } else {
+                        long w2 = ptrace(PTRACE_PEEKTEXT, waited_child, (void*)(rip_val + 2), 0);
+                        unsigned char b2[sizeof(long)];
+                        memcpy(b2, &w2, sizeof(w2));
+                        if (b2[0] == 0xf9) {
+                            is_rdtscp = 1;
+                            is_rdtsc = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #endif
+    // safe_printf("is_rdtsc %d, is_rdtscp %d, regs_valid %d \n", is_rdtsc, is_rdtscp, regs_valid);
+    if (is_rdtsc) {
+        static unsigned long long tsc_khz = 0;
+        if(tsc_khz == 0)
+            tsc_khz = find_freq_khz();
+        // safe_printf("Using NEX_TSC_KHZ=%lu\n", tsc_khz);
+        uint64_t vts_ns = read_vts();
+        __uint128_t prod = (__uint128_t)vts_ns * (__uint128_t)tsc_khz;
+        uint64_t tsc_cycles = (uint64_t)(prod / 1000000ULL);
+        // safe_printf("vts_ns %lu, tsc_khz %lu, tsc_cycles %lu\n", vts_ns, tsc_khz, tsc_cycles);
+        if (regs_valid) {
+            regs.rax = (uint32_t)(tsc_cycles & 0xffffffffULL);
+            regs.rdx = (uint32_t)((tsc_cycles >> 32) & 0xffffffffULL);
+            if (is_rdtscp) {
+                // IA32_TSC_AUX value: leave 0 for now
+                regs.rcx = 0;
+            }
+            regs.rip += is_rdtscp ? 3 : 2;
+            
+            ptrace(PTRACE_SETREGS, waited_child, 0, &regs);
+            // safe_printf("Emulated RDTSC/RDTSCP, TSC cycles: %lu\n", tsc_cycles);
+            ptrace(PTRACE_CONT, waited_child, 0, 0);
+        } else {
+            safe_printf("regs not valid !! \n");
+            // Fail, propagate the signal
+            ptrace(PTRACE_CONT, waited_child, 0, SIGSEGV);
+        }
+    }
+    return is_rdtsc;
+#endif
+    return 0;
+}

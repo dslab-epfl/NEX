@@ -2,6 +2,7 @@
 #include <exec/bpf.h>
 #include <signal.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <inttypes.h>
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -175,6 +176,12 @@ int main(int argc, char *argv[]) {
 
     #if CONFIG_ENABLE_BPF
     attach_bpf(-1, -1, -1);
+
+    // struct timeval ts;
+    // gettimeofday(&ts, NULL);
+    // sys_up_time = ts.tv_sec * 1000000000LL + ts.tv_usec * 1000LL;
+    // printf("System up time (ns): %lu\n", sys_up_time);
+    // set_vts(sys_up_time);
     eager_sync_stop = 0;
     #if CONFIG_EAGER_SYNC
     from_nex_runtime_event_q_fd = get_bpf_map("from_nex_runtime_event_q");
@@ -191,20 +198,26 @@ int main(int argc, char *argv[]) {
     sigaction(SIGINT, &sa_int, NULL);
     sigaction(SIGTERM, &sa_int, NULL);
 
-    printf("\033[1;32m✔\033[0m NEX server running. Press Ctrl+C to exit.\n");
+    printf("\033[1;32m✔ NEX server running. Press Ctrl+C to exit. \033[0m\n");
     while (!stop) pause();
 
     #if CONFIG_ENABLE_BPF
     destroy_bpf();
     #endif
 
-    printf("\033[1;32m✔\033[0m NEX server stopped.\n");
+    printf("\033[1;32m✔ NEX server stopped.\033[0m\n");
 
     return 0;
 }
 
 #if !CONFIG_ENABLE_BPF
 uint64_t read_vts(){
+    //read actual time 
+    return 0;
+    // return get_real_ts();
+}
+
+uint64_t set_vts(uint64_t value){
     //read actual time 
     return 0;
     // return get_real_ts();
