@@ -96,16 +96,9 @@ $(EXEC_BINARY): $(EXEC_ALL) $(LEGACY_LIB_TARGETS) config.mk
 		-Llib -lsimbricks $(LEGACY_LIBS) $(LEGACY_RPATH)
 endif
 
-# MMIO interception shared library (uses accvm objects only)
-ifeq ($(CONFIG_GPU),1)
-$(SHARED_LIB): $(ACCVM_ALL) config.mk
-	$(CC) $(INCLUDE) $(CFLAGS) -shared $(ACCVM_ALL) -o $@ $(LDFLAGS) \
-		-Llib -lsimbricks 
-else
 $(SHARED_LIB): $(ACCVM_ALL) config.mk
 	$(CC) $(INCLUDE) $(CFLAGS) -shared $(ACCVM_ALL) -o $@ $(LDFLAGS) \
 		-Llib -lsimbricks
-endif
 
 # NEX server binary (uses srv.o and ebpf.o)
 ifeq ($(CONFIG_ENABLE_BPF), 1)
@@ -178,8 +171,6 @@ autoconfig:
 autoconfig_vm:
 	$(CXX) -Iinclude -O3 test/nex.matmul.c -o test/nex.matmul
 	./test/autoconfig.sh $(CONFIG_PROJECT_PATH) 5 2000 3000
-
-CLEAN_ALL += test/rdtsc_vs_gettimeofday
 
 test/rdtsc_vs_gettimeofday: test/rdtsc_vs_gettimeofday.c
 	$(CC) $(CFLAGS) -Wextra -o $@ $<

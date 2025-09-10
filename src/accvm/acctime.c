@@ -141,10 +141,9 @@ static void inline tick_nex() {
 }
 
 void virtual_speedup_start(int percentage){
-  printf("virtual speedup start with percentage %d\n", percentage);
-  assert(percentage >=0 && percentage <= 99);
+  printf("virtual speedup start with percentage %d (after mask %d)\n", percentage, (percentage & 0x0FFF));
   int pid = syscall(SYS_gettid);
-  *(uint64_t*)ctrl_base =  ((uint64_t)pid << 32)  | 0x3000 | (percentage & 0x00FF);
+  *(uint64_t*)ctrl_base =  ((uint64_t)pid << 32)  | 0x3000 | (percentage & 0x0FFF);
   tick_nex();
   return;
 }

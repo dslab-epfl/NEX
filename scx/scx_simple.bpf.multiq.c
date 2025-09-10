@@ -809,9 +809,9 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
         u32 enq_q = 0;
         u32 consume_q_copy = consume_q;
 
-        if(run_state == 0){
-            bpf_printk("WARN: enqueue status is 0; Target PID %d, prev_enq %d\n", p->pid, prev_q);
-        }
+        // if(run_state == 0){
+        //     bpf_printk("WARN: enqueue status is 0; Target PID %d, prev_enq %d\n", p->pid, prev_q);
+        // }
 
         LOCK;
         if((run_state > 0 && run_state < 3) || run_state == 255){
@@ -917,16 +917,22 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
                     u32 _index = 0;
                     u64 _state = 0;
                     bpf_map_update_elem(&bpf_sched_ctrl, &_index, &_state, BPF_ANY);
-                }else if((ctrl_msg & 0xFF00) == 0x3000){
+                }else if((ctrl_msg & 0xF000) == 0x3000){
                     // marker to virtually speedup a code segment start
                     // the epoch of the corresponding thread should be enlarged from now on, untill virtual speedup is off
-                    // the percentage to speedup is the last 2 digits of the ctrl message
+                    // the percentage to speedup is the last 3 bytes of the ctrl message
 
-                    u16 speedup = ctrl_msg & 0x00FF;
+                    u16 speedup = ctrl_msg & 0x0FFF;
                     #define SCALE_FACTOR 10000
-                    u64 new_epoch_dur = (u64)((TIME_QUANTUM * 100 * SCALE_FACTOR) / (100 - speedup));
-                    bpf_printk("virtual speedup: new epoch duration %ld for pid %d\n", new_epoch_dur, p->pid);
-                    new_epoch_dur = new_epoch_dur / SCALE_FACTOR;
+                    u64 new_epoch_dur = 0;
+                    if(speedup <= 4000){
+                        new_epoch_dur = (u64)((TIME_QUANTUM * 4000 * SCALE_FACTOR) / (4000 - speedup));
+                        new_epoch_dur = new_epoch_dur / SCALE_FACTOR;
+                    }else{
+                        new_epoch_dur = 1000000000000; // 1000 second
+                    }    
+                    bpf_printk("virtual speedup: new epoch duration %ld (us) for pid %d\n", new_epoch_dur/1000, p->pid);
+
                     if(state_ptr){
                         state_ptr->epoch_dur = new_epoch_dur;
                     }

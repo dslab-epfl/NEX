@@ -82,11 +82,9 @@ void bpf_sched_update_state(uint64_t value){
 }
 
 void bpf_sched_update_state_per_pid(uint32_t ctrl_pid, uint32_t ctrl_msg){
-  printf("Updating state for pid %d msg %x\n", ctrl_pid, ctrl_msg);
   struct pstate state;
   put_bpf_map(sim_proc_state_fd, &ctrl_pid, &state, BPF_MAP_LOOKUP);
   state.ctrl_msg = ctrl_msg;
-  printf("State before update: pid %d cpu %d msg %x\n", ctrl_pid, state.pin_cpu, state.ctrl_msg);
   put_bpf_map(sim_proc_state_fd, &ctrl_pid, &state, BPF_MAP_UPDATE);
 }
 
