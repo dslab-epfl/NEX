@@ -42,6 +42,14 @@ int rewrite_bpf(int pid){
 }
 
 
+int ebs_is_on(){
+  __u32 index = 0;
+  __u64 state = 0;
+  bpf_map_lookup_elem(bpf_sched_ctrl_fd, &index, &state);
+  return state == 1;
+}
+
+
 uint64_t read_vts(){
 	__u32 index = 0;
 	__u64 vts = 0;
@@ -122,8 +130,8 @@ int pop_traced_child(int *ret_pid){
 	if (map_name##_fd < 0) { \
 		fprintf(stderr, "Error getting BPF map %s\n", path_name); \
 		return 1; \
-	} \
-	printf("BPF map %s obtained with fd %d\n", path_name, map_name##_fd); \
+	}
+	// printf("BPF map %s obtained with fd %d\n", path_name, map_name##_fd);
 
 int attach_bpf(int pid, int extra_cost, int on_off){
 		libbpf_set_print(libbpf_print_fn);
@@ -148,7 +156,12 @@ int attach_bpf(int pid, int extra_cost, int on_off){
 	skel->rodata->TIME_QUANTUM = CONFIG_ROUND_SLICE;
 	skel->rodata->NR_CORES = CONFIG_TOTAL_CORES;
 	skel->rodata->SIM_NR_CORES = CONFIG_SIM_CORES;
-	skel->rodata->DEFAULT_ON_OFF = CONFIG_DEFAULT_ON_OFF;
+
+	if(on_off == -1){
+		skel->rodata->DEFAULT_ON_OFF = CONFIG_DEFAULT_ON_OFF;
+	}else{
+		skel->rodata->DEFAULT_ON_OFF = (uint32_t)on_off;
+	}
 	
 #if CONFIG_SIM_VIRT_CORES > 0
 	skel->rodata->SIM_VIRT_CORES = CONFIG_SIM_VIRT_CORES;

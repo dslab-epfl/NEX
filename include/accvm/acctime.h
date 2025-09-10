@@ -8,6 +8,16 @@
 
 #define COMPENSATE_TIME 21
 
+struct pstate {
+    uint64_t sim_state;
+    uint64_t epoch_dur;
+    uint32_t pin_cpu;
+    uint32_t ctrl_msg;
+    bool jailbreak;
+    uint64_t reversed_priority;
+};
+
+
 extern uint64_t sys_up_time;
 
 extern int vts_fd;
@@ -39,4 +49,10 @@ uint64_t read_vts();
 int penalize_thread(int pid, uint64_t till);
 
 uint64_t slowdown();
+
+void bpf_sched_update_state_per_pid(uint32_t ctrl_pid, uint32_t ctrl_msg);
+
+void virtual_speedup_start(int percentage);
+void virtual_speedup_end();
+
 #endif

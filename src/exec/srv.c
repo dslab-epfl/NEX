@@ -159,6 +159,13 @@ void handle_sigint(int sig) {
 }
 
 int main(int argc, char *argv[]) {
+    
+    int on_off = -1;
+    
+    if(argc == 2){
+        on_off = atoi(argv[1]);
+    }
+
     if (geteuid() != 0) {
         printf("\033[1;33m⚠️  Warning: This program should be run with sudo/root privileges.\033[0m\n");
     }
@@ -175,7 +182,7 @@ int main(int argc, char *argv[]) {
     install_crash_handler();
 
     #if CONFIG_ENABLE_BPF
-    attach_bpf(-1, -1, -1);
+    attach_bpf(-1, -1, on_off);
 
     // struct timeval ts;
     // gettimeofday(&ts, NULL);
@@ -198,7 +205,7 @@ int main(int argc, char *argv[]) {
     sigaction(SIGINT, &sa_int, NULL);
     sigaction(SIGTERM, &sa_int, NULL);
 
-    printf("\033[1;32m✔ NEX server running. Press Ctrl+C to exit. \033[0m\n");
+    printf("\033[1;32m✔ NEX server running (default EBS %d). Press Ctrl+C to exit. \033[0m\n", on_off);
     while (!stop) pause();
 
     #if CONFIG_ENABLE_BPF

@@ -1,4 +1,3 @@
-#include "exec/bpf.h"
 #include <assert.h>
 #include <bits/stdint-uintn.h>
 #include <bits/types/struct_timeval.h>
@@ -81,8 +80,16 @@ uintptr_t open_shm_for_nex(const char* shm_path) {
 }
 
 uintptr_t driver_initialize(){
-    const char *shm_path = "/nex_mmio_regions";
-    
+
+    int host_id = 0;
+    char* env = getenv("NEX_ID");
+    if(env){
+        host_id = atoi(env);
+    }
+
+    char shm_path[50];
+    sprintf(shm_path, "/nex_mmio_regions_%d", host_id);
+
     // char* mmio_base_str = getenv("");
     // printf("str: %s\n", mmio_base_str);
     // uintptr_t mmio_base = (uintptr_t)strtoul(mmio_base_str, NULL, 0);

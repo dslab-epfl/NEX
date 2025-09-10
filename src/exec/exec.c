@@ -111,7 +111,12 @@ void* init_mmio_region(const char *shm_name, int size, int init, int* fd){
 }
 
 void init(int host_id){
-  sprintf(mmio_shm_name, "nex_mmio_regions");
+  // get env NEX_ID
+  char* env = getenv("NEX_ID");
+  if(env){
+    host_id = atoi(env);
+  }
+  sprintf(mmio_shm_name, "/nex_mmio_regions_%d", host_id);
   mmio_base = init_mmio_region(mmio_shm_name, MMIO_SIZE, 1, &fds[0]);
   hw_init();
 }
@@ -224,16 +229,6 @@ int main(int argc, char *argv[]) {
 
     install_crash_handler();
 
-    pid_t busy_loop_pid = fork();
-    if (busy_loop_pid == 0) {
-        // Child process: the busy loop
-        // while(1){
-        //     volatile int x = 0;
-        // }
-        exit(0);
-    }
-
-
     pid_t dp = fork();
     pid_t tracee=-1;
     pthread_t eager_sync_thread_id;
@@ -243,10 +238,13 @@ int main(int argc, char *argv[]) {
         safe_printf("Tracee pid: %d\n", getpid());
 
         // Trap RDTSC by delivering SIGSEGV when executed (x86/x86_64 only)
-        
+
         #if CONFIG_ENABLE_BPF && defined(__x86_64__)
-        if (prctl(PR_SET_TSC, PR_TSC_SIGSEGV) == -1) {
-            perror("prctl(PR_SET_TSC, PR_TSC_SIGSEGV)");
+
+        if(ebs_is_on()){
+            if (prctl(PR_SET_TSC, PR_TSC_SIGSEGV) == -1) {
+                perror("prctl(PR_SET_TSC, PR_TSC_SIGSEGV)");
+            }
         }
         #endif
 
@@ -358,13 +356,23 @@ int main(int argc, char *argv[]) {
                 ptrace(PTRACE_CONT, waited_pid, 0, 0);
                 safe_printf("Child cont. %d\n", waited_pid);
             }
+        }else{
+            printf("Unexpected child stopped: %d\n", waited_pid);
+            kill(dp, SIGKILL);
+            goto ABS_END;
         }
 
         tracee = waited_pid;
 
         // stop for exec, execvpe
         int ret = waitpid(tracee, &status, 0);
-        assert(ret != -1);
+        if(ret == -1){
+            printf("Failed to wait for child process %d (err %d)\n", tracee, errno);
+            kill(tracee, SIGKILL);
+            goto ABS_END;
+        }
+
+        // assert(ret != -1);
         if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
             safe_printf("Child %d has stopped at first exec.\n", waited_pid);
             start_ts = get_time();
@@ -384,11 +392,12 @@ int main(int argc, char *argv[]) {
             }
         #endif
 
-        while (1) {
-            // safe_printf("Waiting for child\n");
-            safe_printf("Auto resolve deadlock set threshold for 10 tries; (set to 0 turns this off)\n");
-            cfg_deadlock_resolve(10);
+        // safe_printf("Waiting for child\n");
+        int deadlock_retries = 10;
+        safe_printf("Auto resolve deadlock set threshold for %d tries; (set to 0 turns this off)\n", deadlock_retries);
+        cfg_deadlock_resolve(deadlock_retries);
 
+        while (1) {
             int waited_child = 0;
             do{
                 waited_child = waitpid(-1, &status, __WALL);
@@ -504,8 +513,6 @@ END:
 ABS_END:
     sim_end = 1;
 
-    kill(busy_loop_pid, SIGKILL);
-
     #if CONFIG_ENABLE_BPF
         unmap_bpf();
     #endif
@@ -545,6 +552,10 @@ int destroy_bpf(){
     return 0;
 }
 
+int ebs_is_on(){
+    return 0;
+}
+
 #endif
 
 static uint64_t find_freq_khz(){
@@ -576,6 +587,9 @@ static uint64_t find_freq_khz(){
 int handle_if_rdtsc(int waited_child){
     
     #if CONFIG_ENABLE_BPF
+    if(!ebs_is_on()){
+        return 0;
+    }
 
     safe_printf("handle_if_rdtsc for %d\n", waited_child);
      // Detect if SIGSEGV was caused by RDTSC when PR_SET_TSC=PR_TSC_SIGSEGV

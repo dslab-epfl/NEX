@@ -51,3 +51,4 @@ extern int destroy_bpf();
 extern int map_bpf();
 extern int unmap_bpf();
 extern void cfg_deadlock_resolve(uint64_t threshold);
+extern int ebs_is_on();

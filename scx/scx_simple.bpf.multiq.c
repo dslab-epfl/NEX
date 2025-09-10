@@ -795,11 +795,7 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
         u32 pin_cpu = 0;
         u64 quantum = DYN_TIME_QUANTUM_TO_USE + EXTRA_COST_TIME;
         u32 priority = 0;
-        u32 ctrl_msg = 0;
         if(state_ptr){
-            ctrl_msg = state_ptr->ctrl_msg;
-            state_ptr->ctrl_msg = 0;
-
             sim_state = state_ptr->sim_state;
             pin_cpu = state_ptr->pin_cpu;
             if(state_ptr->epoch_dur > 0){
@@ -807,18 +803,6 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
             }
             priority = state_ptr->reversed_priority & 0xFFFFFFFF;
         }
-
-        // if(ctrl_msg == 0xFFFF){
-        //     // exit control forever
-        //     if(state_ptr){
-        //         bpf_printk("PID %d exit control forever, sim_state %p\n", p->pid, state_ptr->sim_state);
-        //         state_ptr->jailbreak = true;
-        //         state_ptr->sim_state = 0;
-        //         state_ptr->pin_cpu = 0;
-        //     }
-        //     scx_bpf_dispatch(p, OTHER_DSQ_CONFLICT, NORMAL_QUANTUM+EXTRA_COST_TIME, enq_flags);
-        //     return;
-        // }
 
         u32 run_state = sim_state & 0xFF;
         u32 prev_q = (sim_state & 0xFF00) >> 8;
@@ -937,14 +921,15 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
                     // marker to virtually speedup a code segment start
                     // the epoch of the corresponding thread should be enlarged from now on, untill virtual speedup is off
                     // the percentage to speedup is the last 2 digits of the ctrl message
+
                     u16 speedup = ctrl_msg & 0x00FF;
                     #define SCALE_FACTOR 10000
                     u64 new_epoch_dur = (u64)((TIME_QUANTUM * 100 * SCALE_FACTOR) / (100 - speedup));
+                    bpf_printk("virtual speedup: new epoch duration %ld for pid %d\n", new_epoch_dur, p->pid);
                     new_epoch_dur = new_epoch_dur / SCALE_FACTOR;
                     if(state_ptr){
                         state_ptr->epoch_dur = new_epoch_dur;
                     }
-                    bpf_printk("Ctrl msg, msg is %x, new_epoch_dur %ld\n", ctrl_msg, new_epoch_dur);
                     p->scx.slice = new_epoch_dur+EXTRA_COST_TIME;
                 }else if(ctrl_msg == 0x4000){
                     // marker to virtually speedup a code segment end
@@ -953,6 +938,7 @@ void BPF_STRUCT_OPS(simple_enqueue, struct task_struct *p, u64 enq_flags)
                         state_ptr->epoch_dur = 0;
                     }
                     p->scx.slice = DYN_TIME_QUANTUM_TO_USE+EXTRA_COST_TIME;
+                    bpf_printk("virtual speedup end for pid %d\n", p->pid);
                 }else if(ctrl_msg == 0x5000){
                     // marker to jail break current thread
                     // we won't decrease the traced cnt for the whole simulation
@@ -1153,7 +1139,7 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
         if(traced_deadlock_detect_unblock_activated){
             traced_deadlock_detect_unblock_activated = false;
             traced_deadlock_detect_cnt = 0;
-            bpf_printk("Info: deadlock unblock activated once, reset the deadlock detect state\n");
+            // bpf_printk("Info: deadlock unblock activated once, reset the deadlock detect state\n");
         }
 
         if(sp_traced_cnt > 0){
@@ -1165,7 +1151,7 @@ void BPF_STRUCT_OPS(simple_dispatch, s32 cpu, struct task_struct *prev)
             }
             if(_state > 0){
                 if(traced_deadlock_detect_cnt > _state && traced_deadlock_detect_unblock_activated == false){
-                    bpf_printk("WARN: deadlock detected, traced cnt %d, total enabled %d, q1 %d, q2 %d\n", sp_traced_cnt, sim_total_enabled, q1_total_enabled, q2_total_enabled);
+                    // bpf_printk("WARN: deadlock detected, traced cnt %d, total enabled %d, q1 %d, q2 %d\n", sp_traced_cnt, sim_total_enabled, q1_total_enabled, q2_total_enabled);
                     kick_all_cpu(SCX_KICK_IDLE);
                     traced_deadlock_detect_unblock_activated = true;
                 }else{
@@ -1395,6 +1381,7 @@ void BPF_STRUCT_OPS(simple_stopping, struct task_struct *p, bool runnable)
         if( run_state == 3 ){ 
             if(!runnable){
                 if(p->__state & TASK_TRACED){
+                    // bpf_printk("Traced PID %d, state %d, slice %d\n", p->pid, p->__state, p->scx.slice);
                     // uint64_t vts = read_vts();
                     // DEBUG_PRINT("(@%lu)Target PID %d is stopping state (prev state %d, round %d, slice %d): R %d state %d U %d I %d S %d T %d D %d\n", vts, p->pid, sim_state & 0x00FF, (sim_state & 0xFFFF0000)>>16, p->scx.slice, runnable, p->__state, p->__state & TASK_UNINTERRUPTIBLE, p->__state & TASK_INTERRUPTIBLE, p->__state & TASK_STOPPED, p->__state & TASK_TRACED, p->__state & TASK_DEAD);
                     sim_state = (sim_state & 0xFFFFFF00) | 0x02;
@@ -1429,6 +1416,7 @@ void BPF_STRUCT_OPS(simple_stopping, struct task_struct *p, bool runnable)
             if(p->__state & TASK_TRACED){
                 #define TRACED 2
                 // uint64_t vts = read_vts();
+                // bpf_printk("Traced PID %d, state %d, slice %d\n", p->pid, p->__state, p->scx.slice);
                 // DEBUG_PRINT("(vts@%lu)Target PID %d is stopping state (prev state %d, round %d, slice %d): R %d state %d U %d I %d S %d T %d D %d\n", vts, p->pid, sim_state & 0x00FF, (sim_state & 0xFFFF0000)>>16, p->scx.slice, runnable, p->__state, p->__state & TASK_UNINTERRUPTIBLE, p->__state & TASK_INTERRUPTIBLE, p->__state & TASK_STOPPED, p->__state & TASK_TRACED, p->__state & TASK_DEAD);
                 sim_state = (sim_state & 0xFFFFFF00) | 0x02;
                 atomic_inc_cnt(TRACED_CNT_SHIFT);

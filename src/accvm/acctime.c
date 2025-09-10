@@ -126,7 +126,7 @@ uint64_t read_vts(){
     bpf_map_lookup_elem(vts_fd, &index, &vts);
     // printf("read_vts the quantum scheduling is on, vts: %lld \n", vts);
   }else{
-    printf("read_vts the quantum scheduling is off \n");
+    // printf("read_vts the quantum scheduling is off \n");
     struct timespec ts;
     assert(orig_clock_gettime != NULL);
     orig_clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -134,6 +134,36 @@ uint64_t read_vts(){
   }
 	return vts;
 }
+
+
+static void inline tick_nex() {
+    __asm__ volatile("ud2");
+}
+
+void virtual_speedup_start(int percentage){
+  printf("virtual speedup start with percentage %d\n", percentage);
+  assert(percentage >=0 && percentage <= 99);
+  int pid = syscall(SYS_gettid);
+  *(uint64_t*)ctrl_base =  ((uint64_t)pid << 32)  | 0x3000 | (percentage & 0x00FF);
+  tick_nex();
+  return;
+}
+
+void virtual_speedup_end(){
+  int pid = syscall(SYS_gettid);
+  *(uint64_t*)ctrl_base =  ((uint64_t)pid << 32) | 0x4000;
+  tick_nex();
+  return;
+}
+
+void turn_on(){
+  printf("turn on ebs\n");
+  *(uint64_t*)ctrl_base = 0x1000;
+  tick_nex();
+  return;
+}
+
+
 #endif
 
 #if CONFIG_STOP_WORLD_MODE
@@ -181,6 +211,14 @@ uint64_t read_vts(){
     //read actual time 
     return get_real_ts();
 } 
+
+void virtual_speedup_start(int factor){
+  return;
+}
+
+void virtual_speedup_end(){
+  return;
+}
 #endif
 
 
@@ -217,6 +255,7 @@ void vm_adjust_vm_time(t_context *ctx, uint64_t *entry_ts){
 int gettimeofday(struct timeval *tv, void *tz) {
   uint64_t vts = read_vts();
   usToTimeval(vts/1000, tv);
+
   return 0;
 }
 

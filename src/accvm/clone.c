@@ -15,15 +15,6 @@
 #define JAIL_BREAK_NO_HALT 0x7000
 #define JAIL_NO_HALT 0x8000
 
-struct pstate {
-    uint64_t sim_state;
-    uint64_t epoch_dur;
-    uint32_t pin_cpu;
-    uint32_t ctrl_msg;
-    bool jailbreak;
-    uint64_t reversed_priority;
-};
-
 typedef struct __attribute__((packed)) SchedRegs {
   uint64_t ctrl;
   uint64_t lock;
@@ -68,6 +59,7 @@ void tick_nex() {
 }
 
 void bpf_sched_update_state_per_pid(uint32_t ctrl_pid, uint32_t ctrl_msg){
+  printf("bpf_sched_update_state_per_pid for %u with msg %u\n", ctrl_pid, ctrl_msg);
 #if CONFIG_ENABLE_BPF
   struct pstate state;
   put_bpf_map(sim_proc_state_fd, &ctrl_pid, &state, BPF_MAP_LOOKUP);
@@ -104,46 +96,32 @@ void update_ctrl_reg(uint64_t value) {
 }
 
 
-pid_t fork(void){
-   if(ebs_is_on()){
-        printf("fork: EBS is on, updating state for jail break\n");
-        update_ctrl_reg(JAIL_BREAK_NO_HALT);
-        pid_t ret = orig_fork();
-        update_ctrl_reg(JAIL_NO_HALT);
-        printf("fork: Exit jail break\n");
-        return ret;
-        
-    }else{
-        return orig_fork();
-    }
-}
+// int pthread_create(
+//     pthread_t *thread,
+//     const pthread_attr_t *attr,
+//     void *(*start_routine)(void *),
+//     void *arg
+// ) {
 
-int pthread_create(
-    pthread_t *thread,
-    const pthread_attr_t *attr,
-    void *(*start_routine)(void *),
-    void *arg
-) {
-
-    // return orig_pthread_create(thread, attr, start_routine, arg);
+//     // return orig_pthread_create(thread, attr, start_routine, arg);
   
-    // #if CONFIG_USE_FAULT
-    // USE FAULT requires reading process memory to decode instructions
-    // the scheduler control logic conflicts with thread creation when segfaults happens
-    // which deadlocks the whole system
-    // the beflow is to address that issue
-    if(ebs_is_on()){
-        printf("pthread_create: EBS is on, updating state for jail break\n");
-        update_ctrl_reg(JAIL_BREAK_NO_HALT);
-        int ret = orig_pthread_create(thread, attr, start_routine, arg);
-        update_ctrl_reg(JAIL_NO_HALT);
-        printf("pthread_create: Exit jail break\n");
-        return ret;
+//     // #if CONFIG_USE_FAULT
+//     // USE FAULT requires reading process memory to decode instructions
+//     // the scheduler control logic conflicts with thread creation when segfaults happens
+//     // which deadlocks the whole system
+//     // the beflow is to address that issue
+//     if(ebs_is_on()){
+//         printf("pthread_create: EBS is on, updating state for jail break\n");
+//         update_ctrl_reg(JAIL_BREAK_NO_HALT);
+//         int ret = orig_pthread_create(thread, attr, start_routine, arg);
+//         update_ctrl_reg(JAIL_NO_HALT);
+//         printf("pthread_create: Exit jail break\n");
+//         return ret;
         
-    }else{
-        return orig_pthread_create(thread, attr, start_routine, arg);
-    }
-    // #else
-    //   return orig_pthread_create(thread, attr, start_routine, arg);
-    // #endif
-}
+//     }else{
+//         return orig_pthread_create(thread, attr, start_routine, arg);
+//     }
+//     // #else
+//     //   return orig_pthread_create(thread, attr, start_routine, arg);
+//     // #endif
+// }
