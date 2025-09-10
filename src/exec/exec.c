@@ -243,6 +243,7 @@ int main(int argc, char *argv[]) {
         safe_printf("Tracee pid: %d\n", getpid());
 
         // Trap RDTSC by delivering SIGSEGV when executed (x86/x86_64 only)
+        
         #if CONFIG_ENABLE_BPF && defined(__x86_64__)
         if (prctl(PR_SET_TSC, PR_TSC_SIGSEGV) == -1) {
             perror("prctl(PR_SET_TSC, PR_TSC_SIGSEGV)");
